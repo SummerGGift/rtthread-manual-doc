@@ -104,6 +104,34 @@ RT-Thread 软件包环境主要以命令行控制台为主，同时以字符型�
 
   - Help：针对你当前所在某个（行的）选项，查看其帮助信息。如果你对某个选项的功能不是很清楚就可以查看其Help，也可以可能查到写出到配置文件中的宏。
 
+### 3.4 修改工程配置
+
+#### 3.4.1 构建工程流程
+
+第一步：根据Kconfig的内容生成可视化配置菜单（使用menuconfig命令）。
+
+第二步：配置完毕，保存退出可视化菜单生成.config文件。
+
+第三步：根据.config的内容生成rtconfig.h文件。
+
+第四步：根据rtconfig.h使用scons构建工程。
+
+#### 3.4.2 修改Kconfig 添加可视化配置选项
+
+第一步：查找需要添加进工程目录的文件对应的控制宏，修改Kconfig时用到。
+
+以stm32f10x工程为例：需要添加core_cm3.c到工程目录，该文件由宏`RT_USING_BSP_CMSIS`所控制（见rt-thread\bsp\stm32f10x\Libraries\SConscript）。
+
+第二步：确定修改哪个目录下的Kconfig文件。
+
+以stm32f10x工程为例：core_cm3.c属于BSP中的文件，期待可视化选项出现在BSP配置目录下，则需要修改rt-thread\bsp\Kconfig。
+
+第三步：修改Kconfig。
+
+以stm32f10x工程为例：打开rt-thread\bsp\Kconfig文件，找到`menu "BSP DRIVERS"`,在下一行填写`config RT_USING_BSP_CMSIS`和`其他的配置辅助信息`（见下图），重新menuconfig则可视化配置界面出现刚才添加的配置选项。
+
+![image](./figures/menu_bsp_cmsis.png)
+
 ## 4.包管理器
 
 ### 4.1包管理器介绍
