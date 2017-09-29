@@ -114,17 +114,19 @@ RT-Thread 软件包环境主要以命令行控制台为主，同时以字符型�
 
 第三步：根据.config的内容生成rtconfig.h文件。
 
-第四步：根据rtconfig.h使用scons构建工程。
+第四步：SConscript根据rtconfig.h中定义的宏决定哪些文件加入工程。
 
 #### 3.4.2 修改Kconfig 添加可视化配置选项
 
-第一步：查找需要添加进工程目录的文件对应的控制宏，修改Kconfig时用到。
+修改Kconfig的过程，可以认为是构建流程的逆向过程。
 
-以stm32f10x工程为例：需要添加core_cm3.c到工程目录，该文件由宏`RT_USING_BSP_CMSIS`所控制（见rt-thread\bsp\stm32f10x\Libraries\SConscript）。
+第一步：从SConscript中查找需要添加进工程的文件对应的控制宏，修改Kconfig时会用到。
+
+以stm32f10x工程为例：需要添加core_cm3.c到工程，该文件由宏`RT_USING_BSP_CMSIS`所控制（见rt-thread\bsp\stm32f10x\Libraries\SConscript）。
 
 第二步：确定修改哪个目录下的Kconfig文件。
 
-以stm32f10x工程为例：core_cm3.c属于BSP中的文件，期待可视化选项出现在BSP配置目录下，则需要修改rt-thread\bsp\Kconfig。
+以stm32f10x工程为例：core_cm3.c属于BSP中的文件，期待配置选项出现在`BSP DRIVERS`配置目录下，则需要修改rt-thread\bsp\Kconfig。
 
 第三步：修改Kconfig。
 
