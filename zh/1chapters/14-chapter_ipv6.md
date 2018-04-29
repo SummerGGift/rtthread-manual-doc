@@ -181,21 +181,7 @@ IPv4地址为192.168.199.134，IPv6的link-local地址为fe80::200:eff:fe12:3456
 
 在基于Socket API进行开发的应用程序中，IPv4/v6都使用基本相同的编程模型；如connect、accept、listen、send/sendto、recv/recvfrom等Socket API函数在IPv4/v6中用法也基本一致，而IPv4与IPv6间的主要差异体现在了与地址相关的API函数上，其具体差异如下图所示：
 
-----------------------------------------------------------------------------------------------
-                                  IPv4                             IPv6
--------------------------------   ------------------------------   ---------------------------
-地址族                             AF_INET                          AF_INET6
-协议族                             PF_INET                          PF_INET6
-数据结构                           in_addr sockaddr_in              in6_addr sockaddr_in6
-结构体成员                         结构体长度：sin_len                sin6_len
-                                  协议族：sin_family                sin6_family
-                                  端口号：sin_port                  sin6_port
-                                  地址：sin_addr                    sin6_addr
-通配地址                           INADDR_ANY                       IP6_ADDR_ANY
-网络地址转换函数                    inet_aton()/inet_addr()          inet_pton()
-                                  inet_ntoa()                      inet_ntop()
-地址转换函数                       gethostbyname()                  gethostbyname()
-----------------------------------------------------------------------------------------------
+![sockapi](../../figures/ipv6.png)
 
 getaddrinfo()函数在lwIP中实现不完善，这里只介绍inet_pton()函数的用法：
 

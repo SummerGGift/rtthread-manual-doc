@@ -71,7 +71,7 @@ rtconfig.py是一个RT-Thread标准的编译器配置文件，主要用于完成
 
 这里以bsp/stm32f10x 为例，其rtconfig.py如下所示
 
-~~~{.python}
+```{.c}
 ARCH='arm'
 CPU='cortex-m3'
 CROSS_TOOL='keil'
@@ -86,7 +86,7 @@ elif CROSS_TOOL == 'iar':
     PLATFORM    = 'iar'
     IAR_PATH    = r'E:/Program Files/IAR Systems/Embedded Workbench 6.0'
  .....
-~~~
+```
 
 一般来说，我们只需要修改```CROSS_TOOL```和下面的```EXEC_PATH```两个选项。
 
@@ -315,7 +315,7 @@ SCons内置函数。其参数包括三个：
 
 bsp/stm32f10x/application/SConcript
 
-~~~~ {#SConscript .python .numberLines startFrom="1"}
+```{.c}
 
 Import('RTT_ROOT')
 Import('rtconfig')
@@ -329,7 +329,7 @@ group = DefineGroup('Applications', src, depend = [''], CPPPATH = include_path)
 
 Return('group')
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 上面这个脚本完成如下功能：
 
@@ -344,7 +344,7 @@ Return('group')
 
 component/finsh/SConscript
 
-~~~~ {#SConscript .python .numberLines startFrom="1"}
+``` {.c}
 
 Import('rtconfig')
 from building import *
@@ -361,8 +361,7 @@ group = DefineGroup('finsh', src, depend = ['RT_USING_FINSH'], CPPPATH = CPPPATH
 	LINKFLAGS = LINKFLAGS)
 	
 Return('group')
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 从第7行开始，与示例1有些区别。
 
@@ -385,7 +384,7 @@ DefinGroup同样将finsh目录下的所有文件创建为finsh组。
 
 bsp/stm32f10x/SConscript
 
-~~~~ {#SConscript .python .numberLines startFrom="1"}
+```{.c}
 
 # for module compiling
 import os
@@ -401,8 +400,7 @@ for d in list:
         objs = objs + SConscript(os.path.join(d, 'SConscript'))
 	
 Return('objs')
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 `cwd = str(Dir('#')` 获取工程的顶级目录，也就是工程的SConstruct所在的目录，在这里它的效果与 `cwd = GetCurrentDir()`相同。随后定义了一个空的list型变量objs。第6行`list = os.listdir(cwd)`得到当前目录下的所有子目录，并保存到变量list中。
 随后是一个python的for循环，其含义是取出一个当前目录的子目录，利用os.path.join(cwd,d)拼接成一个完整路径，然后判断这个子目录是否存在一个名为SConscript的文件，若存在，则执行
@@ -415,8 +413,7 @@ Return('objs')
 
 stm32f10x/drivers/SConscript
 
-~~~~ {#SConscript .python .numberLines startFrom="1"}
-
+```{.c}
 Import('RTT_ROOT')
 Import('rtconfig')
 from building import *
@@ -456,12 +453,13 @@ CPPPATH = [cwd]
 group = DefineGroup('Drivers', src, depend = [''], CPPPATH = CPPPATH)
 
 Return('group')
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 第8行使用Split方法来将一个文件字符串分割成成一个list，其效果等价于
 
+```{.c}
 	src = ['board.c', 'stm32f10x_it.c', 'led.c', 'usart.c']
+```
 
 第15行到第33行使用了GetDepend方法检查rtconfig.h中的某个宏是否打开，如果打开，则使用`src += [src_name]`来添加源码。最后使用DefineGroup创建组。
 
@@ -469,7 +467,7 @@ Return('group')
 
 在进行编译时添加一个额外的库，需要注意不同的工具链对二进制库的命名。例如GCC工具链，它识别的是libabc.a这样的库名称，在指定库时是指定abc，而不是libabc。所以在链接额外库时需要在SConscript文件中特别注意。另外，在指定额外库时，也最好指定相应的库搜索路径，以下是一个示例：
 
-~~~~ {#SConscript .python .numberLines startFrom="1"}
+```{.c}
 # RT-Thread building script for component
 
 Import('rtconfig')
@@ -483,8 +481,7 @@ LIBPATH = [cwd + '/libs']
 LIBS = ['abc']
 
 group = DefineGroup('ABC', src, depend = [''], LIBS = LIBS, LIBPATH=LIBPATH)
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
 
 如果工具链是GCC，则库的名称应该是libabc.a；如果工具链是armcc，则库的名称应该是abc.lib。库的搜索路径是当前目录下的'libs'目录。
 
@@ -498,7 +495,7 @@ group = DefineGroup('ABC', src, depend = [''], LIBS = LIBS, LIBPATH=LIBPATH)
 
 例如针对一个hello world的简单程序，假设它的源文件是：
 
-~~~{.c}
+```{.c}
 /* file: hello.c */
 #include <stdio.h>
 
@@ -506,7 +503,7 @@ int main(int argc, char** argv)
 {
     printf("Hello, world!\n");
 }
-~~~
+```
 
 只需要在这个文件目录下添加一个如下内容的SConstruct文件：
 
