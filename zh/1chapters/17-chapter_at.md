@@ -679,3 +679,37 @@ int rt_at_client_port_init(void)
     return RT_EOK;
 }
 ```
+
+### 其他 API 接口介绍 ###
+
+#### 发送指定长度数据 ####
+
+    rt_size_t rt_at_client_send(const char *buf, rt_size_t size);
+
+该函数用于通过 AT Client 设备发送指定长度数据到 AT Server 设备，多用于 AT Socket 功能。
+
++ 参数
+
+    buf： 发送数据的指针；  
+    size： 发送数据的长度；
+
++ 返回值
+
+    \>0： 成功，返回发送成功的数据长度；  
+    <=0： 失败；
+
+#### 接收指定长度数据 ####
+
+    rt_size_t rt_at_client_recv(char *buf, rt_size_t size);
+
+该函数用于通过 AT Client 设备接收指定长度的数据，多用于 AT Socket 功能。
+
++ 参数
+
+    buf： 用于接收数据的字符串指针；  
+    size： 最大支持接收数据的长度；
+
++ 返回值
+
+    \>0： 成功，返回接收成功的数据长度；  
+    <=0： 失败；
