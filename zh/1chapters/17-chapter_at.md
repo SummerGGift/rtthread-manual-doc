@@ -19,19 +19,24 @@ AT 命令集是一种应用于 AT 服务器（AT Server）与 AT 客户端（AT 
 
 - AT 功能的实现需要 AT Server 和 AT Client 两个部分共同完成；
 
-- AT Server 主要用于接收 AT Client 发送的命令，判断接收的命令及参数格式，并下发对应的回应数据，或者主动下发数据；
+- AT Server 主要用于接收 AT Client 发送的命令，判断接收的命令及参数格式，并下发对应的响应数据，或者主动下发数据；
 
-- AT Client 主要用于发送命令、等待 AT Server 回应，并对 AT Server 回应数据或主动发送的数据进行解析处理，获取相关信息。
+- AT Client 主要用于发送命令、等待 AT Server 响应，并对 AT Server 响应数据或主动发送的数据进行解析处理，获取相关信息。
 
 - AT Server 和 AT Client 之间支持多种数据通讯的方式（UART、SPI等），目前最常用的是串口 UART 通讯方式。
 
-- AT Server 向 AT Client 发送的数据分成两种：回应数据和 URC 数据。其中回应数据是 AT Client 发送命令之后收到的 AT Server 回应状态和信息；URC 数据是 AT Server 主动发送给 AT Client 的数据。URC 数据一般出现在一些特殊的情况，比如 WIFI 连接断开、TCP 接收数据等，这些情况往往需要用户做出相应操作。
+- AT Server 向 AT Client 发送的数据分成两种：响应数据和 URC 数据。
+
+    - 响应数据： AT Client 发送命令之后收到的 AT Server 响应状态和信息；
+    - URC 数据： AT Server 主动发送给 AT Client 的数据，一般出现在一些特殊的情况，比如 WIFI 连接断开、TCP 接收数据等，这些情况往往需要用户做出相应操作。
 
 ### AT 组件介绍 ###
 
-AT 组件是基于 RT-Thread 系统的 `AT Server` 和 `AT Client` 的实现，组件完成 AT 命令的发送、命令格式及参数判断、命令的回应、回应数据的接收、回应数据的解析、URC 数据处理等整个 AT 命令数据交互流程。设备通过 AT 组件设备可以作为 AT Client 使用串口连接其他设备发送并接收解析数据，可以作为 AT Server 让其他设备甚至电脑端连接完成发送数据的回应，也可以在本地 shell 启动 CLI 模式使设备同时支持 AT Server 和 AT Clinet 功能，该模式多用于设备开发调试。
+AT 组件是基于 RT-Thread 系统的 `AT Server` 和 `AT Client` 的实现，组件完成 AT 命令的发送、命令格式及参数判断、命令的响应、响应数据的接收、响应数据的解析、URC 数据处理等整个 AT 命令数据交互流程。通过 AT 组件设备可以作为 AT Client 使用串口连接其他设备发送并接收解析数据，可以作为 AT Server 让其他设备甚至电脑端连接完成发送数据的响应，也可以在本地 shell 启动 CLI 模式使设备同时支持 AT Server 和 AT Clinet 功能，该模式多用于设备开发调试。
 
-AT 组件代码主要位于`rt-thread/components/net/at/`目录中。主要的功能包括如下,  
+AT 组件中 AT Client 功能占用资源体积为 4.3K ROM 和 2.0K RAM；AT Server 功能占用资源体积为 4.0K ROM 和 2.5K RAM；AT CLI 功能占用资源体积为 1.5K ROM 几乎没有使用 RAM。AT 组件总体资源占用极小，因此非常适用应用于资源有限的嵌入式设备中。
+
+AT 组件代码主要位于 `rt-thread/components/net/at/` 目录中。主要的功能包括如下,  
 
 AT Server 主要功能特点： 
 
@@ -44,7 +49,7 @@ AT Server 主要功能特点：
  AT Client 主要功能： 
 
  - URC 数据处理： 完备的 URC 数据的处理方式； 
- - 数据解析： 支持自定义回应数据的解析方式，方便获取回应数据中相关信息；
+ - 数据解析： 支持自定义响应数据的解析方式，方便获取响应数据中相关信息；
  - 调试模式： 提供 AT Client CLI 命令行交互模式，主要用于设备调试。
  - AT Socket：作为 AT Client 功能的延伸，使用 AT 命令收发作为基础，实现标准的 `POSIX` 网络接口，完成数据的收发功能，使用户通过 AT 命令完成设备连网和数据通讯。
 
@@ -331,9 +336,22 @@ AT Server 默认已支持多种基础命令（ATE、ATZ 等），其中部分命
 - `RT_AT_CLIENT_DEVICE`： 定义设备上 AT Client 功能使用的串口通讯设备的名称，确保未被使用且设备唯一，这里使用的是 `uart2` 设备；
 - `RT_AT_SERVER_RECV_BUFF_LEN`：定义 AT Client 设备最大接收数据的长度；
 
-AT Client 中的调试配置方式和 AT Server 中一致，这里不再重复介绍。
+上面配置选项可以直接在 `rtconfig.h` 文件中添加使用，也可以通过组件包管理工具 ENV 配置选项加入，ENV 中具体路径如下：
 
-上面配置选项可以直接在 `rtconfig.h` 文件中添加使用，也可以通过组件包管理工具 ENV 配置选项加入，ENV 配置选项的位置和 AT Server 中配置一致。添加配置完成之后可以使用命令行重新生成工程，或使用 scons 来进行编译生成。
+```C
+RT-Thread Components  ---> 
+     Network stack  --->
+        AT commands  --->
+             [*] Enable AT commands 
+             [ ]   Enable debug log output    
+             [ ]   Enable AT commands server
+             [*]   Enable AT commands client
+             (uart2) Client device name
+             (512)   The maximum length of client data accepted        
+             [ ]   Enable print RAW format AT command communication data           
+```
+
+添加配置完成之后可以使用命令行重新生成工程，或使用 scons 来进行编译生成。
 
 ### AT Client 初始化 ###
 
@@ -368,73 +386,73 @@ struct rt_at_response
 typedef struct rt_at_response *rt_at_response_t;
 ```
 
-AT 组件中，该结构体用于定义一个 AT Server 回应数据的控制块，用于存放或者限制 AT Server 返回数据的部分格式。其中 `buf` 用于存放接收到的回应数据，注意的是 buf 中存放的数据并不是原始回应数据，而是原始回应数据去除结束符（"\r\n"）的数据，buf 中每行数据以 '\0' 分割，方便按行获取数据。`buf_size` 为用户自定义本次回应最大支持的接收数据的长度，由用户根据自己命令返回值长度定义。`line_num` 为用户自定义的本次回应数据需要接收的行数，如果没有行数限定需求可以置为 0。 `line_counts` 用于记录本次回应数据总行数。`timeout` 为用户自定义的本次回应数据最大回应时间。该结构体中 `buf_size`、`line_num`、`timeout` 三个参数为限制条件，在结构体创建时设置，其他参数为存放数据参数，用于后面数据解析。
+AT 组件中，该结构体用于定义一个 AT Server 响应数据的控制块，用于存放或者限制 AT Server 返回数据的部分格式。其中 `buf` 用于存放接收到的响应数据，注意的是 buf 中存放的数据并不是原始响应数据，而是原始响应数据去除结束符（"\r\n"）的数据，buf 中每行数据以 '\0' 分割，方便按行获取数据。`buf_size` 为用户自定义本次响应最大支持的接收数据的长度，由用户根据自己命令返回值长度定义。`line_num` 为用户自定义的本次响应数据需要接收的行数，如果没有行数限定需求可以置为 0。 `line_counts` 用于记录本次响应数据总行数。`timeout` 为用户自定义的本次响应数据最大响应时间。该结构体中 `buf_size`、`line_num`、`timeout` 三个参数为限制条件，在结构体创建时设置，其他参数为存放数据参数，用于后面数据解析。
 
 相关 API 接口介绍：
 
-#### 创建回应结构体 ####
+#### 创建响应结构体 ####
 
     rt_at_response_t rt_at_create_resp(rt_size_t buf_size, rt_size_t line_num, rt_int32_t timeout);
 
-该函数用于创建自定义的回应数据接收结构，用于后面接收并解析发送命令回应数据。
+该函数用于创建自定义的响应数据接收结构，用于后面接收并解析发送命令响应数据。
 
 + 参数
 
-    buf_size： 本次回应最大支持的接收数据的长度。  
-    line_num： 本次回应需要返回数据的行数，行数是以标准结束符划分。  
-               若为 0 ，则接收到 "OK" 或 "ERROR" 数据后结束本次回应接收。  
+    buf_size： 本次响应最大支持的接收数据的长度。  
+    line_num： 本次响应需要返回数据的行数，行数是以标准结束符划分。  
+               若为 0 ，则接收到 "OK" 或 "ERROR" 数据后结束本次响应接收。  
                若大于 0，接收完当前设置行号的数据后返回成功。  
-    timeout：  本次回应数据最大回应时间，数据接收超时返回错误。
+    timeout：  本次响应数据最大响应时间，数据接收超时返回错误。
 
 + 返回
 
-    != NULL： 成功，返回指向回应结构体的指针。  
+    != NULL： 成功，返回指向响应结构体的指针。  
      = NULL： 失败，内存不足
 
-#### 删除回应结构体 ####
+#### 删除响应结构体 ####
 
     void rt_at_delete_resp(rt_at_response_t resp);
 
-该函数用于删除创建的回应结构体对象，一般与 **rt_at_create_resp** 创建函数成对出现。
+该函数用于删除创建的响应结构体对象，一般与 **rt_at_create_resp** 创建函数成对出现。
 
 + 参数
 
-    resp： 准备删除的回应结构体指针。
+    resp： 准备删除的响应结构体指针。
 
 + 返回
 
     无
 
-#### 设置回应结构体参数 ####
+#### 设置响应结构体参数 ####
 
     rt_at_response_t rt_at_resp_set_info(rt_at_response_t resp, rt_size_t buf_size, rt_size_t line_num, rt_int32_t timeout);
 
-该函数用于设置已经创建的回应结构体信息，主要设置对回应数据的限制信息，一般用于创建结构体之后，发送 AT 命令之前。
+该函数用于设置已经创建的响应结构体信息，主要设置对响应数据的限制信息，一般用于创建结构体之后，发送 AT 命令之前。
 
 + 参数
 
-    resp： 已经创建的回应结构体指针。  
-    buf_size： 本次回应最大支持的接收数据的长度。  
-    line_num： 本次回应需要返回数据的行数，行数是以标准结束符划分。  
-               若为 0 ，则接收到 "OK" 或 "ERROR" 数据后结束本次回应接收。  
+    resp： 已经创建的响应结构体指针。  
+    buf_size： 本次响应最大支持的接收数据的长度。  
+    line_num： 本次响应需要返回数据的行数，行数是以标准结束符划分。  
+               若为 0 ，则接收到 "OK" 或 "ERROR" 数据后结束本次响应接收。  
                若大于 0，接收到当前设置行号数据后返回成功。  
-    timeout：  本次回应数据最大回应时间，数据接收超时返回错误。
+    timeout：  本次响应数据最大响应时间，数据接收超时返回错误。
 
 + 返回
 
-    != NULL： 成功，返回修改过参数的回应结构体的指针。  
+    != NULL： 成功，返回修改过参数的响应结构体的指针。  
      = NULL： 失败，内存不足
 
 
-#### 发送命令并接收回应 ####
+#### 发送命令并接收响应 ####
 
 `rt_err_t rt_at_exec_cmd(rt_at_response_t resp const char *cmd_expr, ...);`
 
-该函数用于 AT Client 发送命令到 AT Server，并等待接收回应，其中 `resp` 是已经创建好回应结构体的指针，AT 命令的输入使用匹配表达式的可变参输入。
+该函数用于 AT Client 发送命令到 AT Server，并等待接收响应，其中 `resp` 是已经创建好响应结构体的指针，AT 命令的输入使用匹配表达式的可变参输入。
 
 + 参数
 
-    resp： 创建的回应结构体指针。  
+    resp： 创建的响应结构体指针。  
     cmd_expr： 自定义输入命令的表达式。    
     ...： 输入命令数据列表，为可变参数。  
 
@@ -442,13 +460,13 @@ AT 组件中，该结构体用于定义一个 AT Server 回应数据的控制块
 
     \>=0： 成功  
       -1： 失败  
-      -2： 失败，接收回应超时  
+      -2： 失败，接收响应超时  
 
 可参考以下代码了解如何使用以上几个 AT 命令收发相关函数使用方式：
 
 ```c
 /*
- * 程序清单：AT Client发送命令并接收回应例程
+ * 程序清单：AT Client发送命令并接收响应例程
  */
 
 #include <rtthread.h>
@@ -464,7 +482,7 @@ int at_client_send(int argc, char **argv)
         return -RT_ERROR;
     }
 
-    /* 创建回应结构体，设置最大支持回应数据长度为 512 字节，回应数据行数无限制，超时时间为 5 秒 */
+    /* 创建响应结构体，设置最大支持响应数据长度为 512 字节，响应数据行数无限制，超时时间为 5 秒 */
     resp = rt_at_create_resp(512, 0, rt_tick_from_millisecond(5000));
     if (!resp)
     {
@@ -472,7 +490,7 @@ int at_client_send(int argc, char **argv)
         return -RT_ENOMEM;
     }
    
-    /* 发送 AT 命令并接收 AT Server 回应数据，数据及信息存放在 resp 结构体中 */
+    /* 发送 AT 命令并接收 AT Server 响应数据，数据及信息存放在 resp 结构体中 */
     if (rt_at_exec_cmd(resp, argv[1]) != RT_EOK)
     {
         LOG_E("AT client send commands failed, response error or timeout !");
@@ -482,7 +500,7 @@ int at_client_send(int argc, char **argv)
     /* 命令发送成功 */
     LOG_D("AT Client send commands to AT Server success!");
 
-    /* 删除回应结构体 */
+    /* 删除响应结构体 */
     rt_at_delete_resp(resp);
 
     return RT_EOK;
@@ -494,23 +512,23 @@ MSH_CMD_EXPORT(at_clinet_send, AT Client send commands to AT Server and get resp
 #endif
 ```
 
-发送和接收数据实现原理比较简单，主要是对 AT Client 绑定的串口设备的读写操作，并设置相关行数和超时来限制回应数据，值得注意的是，正常情况下需要先创建 resp 回应结构体传入 rt_at_exec_cmd 函数用于数据的接收，当 rt_at_exec_cmd 函数传入 resp 为空时说明本次发送数据不考虑处理回应数据直接返回结果。
+发送和接收数据实现原理比较简单，主要是对 AT Client 绑定的串口设备的读写操作，并设置相关行数和超时来限制响应数据，值得注意的是，正常情况下需要先创建 resp 响应结构体传入 rt_at_exec_cmd 函数用于数据的接收，当 rt_at_exec_cmd 函数传入 resp 为空时说明本次发送数据不考虑处理响应数据直接返回结果。
 
 ### 数据解析 ###
 
-数据正常获取之后，需要对回应的数据进行解析处理，这也是 AT Client 重要的功能之一。 AT Client 中数据的解析提供自定义解析表达式的解析形式，其解析语法使用标准的 `sscanf` 解析语法。开发者可以通过自定义数据解析表达式回去回应数据中有用信息，前提是开发者需要提前查看相关手册了解 AT Client 连接的 AT Server 设备回应数据的基本格式。下面通过几个函数和例程简单 AT Client 数据解析方式。
+数据正常获取之后，需要对响应的数据进行解析处理，这也是 AT Client 重要的功能之一。 AT Client 中数据的解析提供自定义解析表达式的解析形式，其解析语法使用标准的 `sscanf` 解析语法。开发者可以通过自定义数据解析表达式回去响应数据中有用信息，前提是开发者需要提前查看相关手册了解 AT Client 连接的 AT Server 设备响应数据的基本格式。下面通过几个函数和例程简单 AT Client 数据解析方式。
 
 相关 API 接口：
 
-#### 获取指定行号的回应数据 ####
+#### 获取指定行号的响应数据 ####
 
     const char *at_resp_get_line(rt_at_response_t resp, rt_size_t resp_line);
 
-该函数用于在 AT Server 回应数据中获取指定行号的一行数据。行号是以标准数据结束符来判断的，上述发送和接收函数 rt_at_exec_cmd 已经对回应数据的数据和行号进行记录处理存放于 resp 回应结构体中，这里可以直接获取对应行号的数据信息。
+该函数用于在 AT Server 响应数据中获取指定行号的一行数据。行号是以标准数据结束符来判断的，上述发送和接收函数 rt_at_exec_cmd 已经对响应数据的数据和行号进行记录处理存放于 resp 响应结构体中，这里可以直接获取对应行号的数据信息。
 
 + 参数
 
-    resp： 回应结构体指针。  
+    resp： 响应结构体指针。  
     resp_line： 需要获取数据的行号。   
 
 + 返回
@@ -519,15 +537,15 @@ MSH_CMD_EXPORT(at_clinet_send, AT Client send commands to AT Server and get resp
      = NULL： 失败，输入行号错误。  
 
 
-#### 解析指定行号的回应数据 ####
+#### 解析指定行号的响应数据 ####
 
     int at_resp_parse_line_args(rt_at_response_t resp, rt_size_t resp_line, const char *resp_expr, ...);
 
-该函数用于在 AT Server 回应数据中获取指定行号的一行数据, 并解析该行数据中的参数。
+该函数用于在 AT Server 响应数据中获取指定行号的一行数据, 并解析该行数据中的参数。
 
 + 参数
 
-    resp： 回应结构体指针。  
+    resp： 响应结构体指针。  
     resp_line： 需要解析数据的行号。
     resp_expr： 自定义的参数解析表达式。  
     ...： 解析参数列表，为可变参数。  
@@ -549,7 +567,7 @@ MSH_CMD_EXPORT(at_clinet_send, AT Client send commands to AT Server and get resp
     
     AT+UART?
 
-客户端获取回应的数据：
+客户端获取响应的数据：
     
     UART=115200,8,1,0,0\r\n
     OK\r\n
@@ -557,19 +575,19 @@ MSH_CMD_EXPORT(at_clinet_send, AT Client send commands to AT Server and get resp
 解析伪代码如下：
 
 ```c
-/* 创建服务器回应结构体，64 为用户自定义接收数据最大长度 */
+/* 创建服务器响应结构体，64 为用户自定义接收数据最大长度 */
 resp = rt_at_create_resp(64, 0, rt_tick_from_millisecond(5000));
 
-/* 发送数据到服务器，并接收回应数据存放在 resp 结构体中 */
+/* 发送数据到服务器，并接收响应数据存放在 resp 结构体中 */
 rt_at_exec_cmd(resp, "AT+UART?");
 
-/* 解析获取串口配置信息，1 表示解析回应数据第一行，'%*[^=]'表示忽略等号之前的数据 */
+/* 解析获取串口配置信息，1 表示解析响应数据第一行，'%*[^=]'表示忽略等号之前的数据 */
 at_resp_parse_line_args(resp, 1,"%*[^=]=%d,%d,%d,%d,%d", &baudrate, &databits,
         &stopbits, &parity, &control);    // 
 printf("baudrate=%d, databits=%d, stopbits=%d, parity=%d, control=%d\n", 
         baudrate, databits, stopbits, parity, control);
 
-/* 删除服务器回应结构体 */
+/* 删除服务器响应结构体 */
 rt_at_delete_resp(resp);
 ```
 
@@ -579,29 +597,29 @@ rt_at_delete_resp(resp);
     
      AT+IPMAC?
 
-服务器获取回应的数据：
+服务器获取响应的数据：
 
-    IP="192.168.1.10"\r\n
-    MAC="12:34:56:78:9a:bc"\r\n
+    IP=192.168.1.10\r\n
+    MAC=12:34:56:78:9a:bc\r\n
     OK\r\n   
 
 解析伪代码如下：
 
 ```c
-/* 创建服务器回应结构体，128 为用户自定义接收数据最大长度 */
+/* 创建服务器响应结构体，128 为用户自定义接收数据最大长度 */
 resp = rt_at_create_resp(128, 0, rt_tick_from_millisecond(5000));
 
 rt_at_exec_cmd(resp, "AT+IPMAC?");
 
-/* '%*[^\"]' 表示忽略双引号之前数据， '\"%[^\"]\"' 表示匹配双引号内非双引号数据为输出结果 */
-at_resp_parse_line_args(resp, 1,"%*[^\"]\"%[^\"]\"", ip);   
-at_resp_parse_line_args(resp, 2,"%*[^\"]\"%[^\"]\"", mac);
+/* 自定义解析表达式，解析当前行号数据中的信息 */
+at_resp_parse_line_args(resp, 1,"IP=%s", ip);   
+at_resp_parse_line_args(resp, 2,"MAC=%s", mac);
 printf("IP=%s, MAC=%s\n", ip, mac);
 
 rt_at_delete_resp(resp);
 ```
 
-解析数据的关键在于解析表达式的正确定义，因为对于 AT 设备的回应数据，不同设备厂家不同命令的回应数据格式不唯一，所以只能提供自定义解析表达式的形式获取需要信息，at_resp_parse_line_args 解析参数函数的设计基于 `sscanf` 数据解析方式，开发者使用之前需要先了解基本的解析语法，再结合回应数据设计合适的解析语法。如果开发者不需要解析具体参数，可以直接使用 at_resp_get_line 函数获取一行的具体数据。
+解析数据的关键在于解析表达式的正确定义，因为对于 AT 设备的响应数据，不同设备厂家不同命令的响应数据格式不唯一，所以只能提供自定义解析表达式的形式获取需要信息，at_resp_parse_line_args 解析参数函数的设计基于 `sscanf` 数据解析方式，开发者使用之前需要先了解基本的解析语法，再结合响应数据设计合适的解析语法。如果开发者不需要解析具体参数，可以直接使用 at_resp_get_line 函数获取一行的具体数据。
 
 
 ### URC 数据处理 ###
@@ -654,10 +672,10 @@ static void urc_conn_func(const char *data, rt_size_t size)
     LOG_D("AT Server device WIFI connect success!");
 }
 
-static void urc_disconn_func(const char *data, rt_size_t size)
+static void urc_recv_func(const char *data, rt_size_t size)
 {
-    /* WIFI 连接断开信息 */
-    LOG_D("AT Server device WIFI disconnected!");
+    /* 接收到服务器发送数据 */
+    LOG_D("AT Client receive AT Server data!");
 }
 
 static void urc_func(const char *data, rt_size_t size)
@@ -668,7 +686,7 @@ static void urc_func(const char *data, rt_size_t size)
 
 static struct rt_at_urc urc_table[] = {
     {"WIFI CONNECTED",   "\r\n",     urc_conn_func},
-    {"WIFI DISCONNECT",  "\r\n",     urc_disconn_func},
+    {"+RECV",            ":",        urc_recv_func},
     {"RDY",              "\r\n",     urc_func},
 };
 
