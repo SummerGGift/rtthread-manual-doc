@@ -51,7 +51,7 @@ AT Server 主要功能特点：
  - URC 数据处理： 完备的 URC 数据的处理方式； 
  - 数据解析： 支持自定义响应数据的解析方式，方便获取响应数据中相关信息；
  - 调试模式： 提供 AT Client CLI 命令行交互模式，主要用于设备调试。
- - AT Socket：作为 AT Client 功能的延伸，使用 AT 命令收发作为基础，实现标准的 `POSIX` 网络接口，完成数据的收发功能，使用户通过 AT 命令完成设备连网和数据通讯。
+ - AT Socket：作为 AT Client 功能的延伸，使用 AT 命令收发作为基础，实现标准的 BSD 网络接口，完成数据的收发功能，使用户通过 AT 命令完成设备连网和数据通讯。
 
 ## AT Server ##
 
@@ -91,7 +91,6 @@ AT 组件中还提供了如下两种调试功能，用户可以通过定义宏�
 - `RT_AT_DEBUG`：用于开启 AT 组件 DEBUG 模式，可以显示更多调试日志信息。
 - `RT_AT_PRINT_RAW_CMD`：用于开启实时显示 AT 命令通信数据模式，方便调试。
 
-
 上面配置选项可以直接在 `rtconfig.h` 文件中添加使用，也可以通过组件包管理工具 ENV 配置选项加入，ENV 中具体路径如下：
 
 ```C
@@ -115,7 +114,7 @@ RT-Thread Components  --->
 
 配置开启 AT Server 配置之后，需要在启动时对它进行初始化，开启 AT Server 功能，如果程序中已经使用了组件自动初始化，则不再需要额外进行单独的初始化，否则需要在初始化任务中调用如下函数：
 
-    int rt_at_server_init(void)；
+`int rt_at_server_init(void);`
 
 AT Server 初始化函数，属于应用层函数，需要在使用 AT Server 功能或者使用 AT Server CLI 功能前调用。**rt_at_server_init** 函数完成对 AT 命令存放数据段初始化、AT Server 设备初始化以及 AT Server 使用的信号量等资源的初始化，并创建 `at_server` 线程用于 AT Server 中数据的接收的解析。
 
@@ -143,7 +142,7 @@ AT 命令根据传入的参数格式不同可以实现不同的功能，对于�
 
 每个命令的四种功能并不需要全部实现，用户自定义添加 AT Server 命令时，可根据自己需求实现一种或几种上述功能函数，未实现的功能可以使用 `NULL` 表示，再通过自定义命令添加函数添加到基础命令列表，添加方式类似于 `finsh/msh` 命令添加方式，添加函数如下：
 
-    RT_AT_CMD_EXPORT(_name_, _args_expr_, _test_, _query_, _setup_, _exec_)
+`RT_AT_CMD_EXPORT(_name_, _args_expr_, _test_, _query_, _setup_, _exec_)`
 
 - `_name_ `：AT 命令名称；
 - `_args_expr_`：AT 命令参数表达式；（无参数为NULL，`<>` 中为必选参数，`[]` 中为可选参数）
@@ -175,47 +174,42 @@ RT_AT_CMD_EXPORT("AT+TEST", =<value1>[,<value2>], NULL, at_test_query, NULL, at_
 
 #### 发送数据至客户端设备（不换行） ####
 
-    void rt_at_server_printf(const char *format, ...);
+`void rt_at_server_printf(const char *format, ...);`
 
 该函数用于 AT Server 通过串口设备发送固定格式的数据到对应的 AT Client 串口设备上，数据结尾不带换行符。用于自定义 AT Server 中 AT 命令的功能函数中。
- 
-+ 参数
 
-    format：自定义输入数据的表达式。   
-    ...： 输入数据列表，为可变参数。
+| 参数     | 描述                      |
+| :-----   | :-----                   |
+|format    | 自定义输入数据的表达式     |
+|...       | 输入数据列表，为可变参数   |
+| **返回** | **描述**                  |
+|无        | 无                        |
 
-+ 返回
-
-    无
 
 ### 发送数据至客户端设备（换行） ####
 
-    void rt_at_server_printfln(const char *format, ...);
+`void rt_at_server_printfln(const char *format, ...);`
 
  该函数用于 AT Server 通过串口设备发送固定格式的数据到对应的 AT Client 串口设备上，数据结尾带换行符。用于自定义 AT Server 中 AT 命令的功能函数中。
  
-+ 参数
-
-    format：自定义输入数据的表达式。  
-    ...： 输入数据列表，为可变参数。  
-
-+ 返回
-
-    无 
+| 参数     | 描述                     |
+| :-----   | :-----                  |
+|format    | 自定义输入数据的表达式    |
+|...       | 输入数据列表，为可变参数  |
+| **返回** | **描述**                 |
+|无        | 无                       |
 
 #### 发送命令执行结果至客户端设备 ####
 
-    void rt_at_server_print_result(rt_at_result_t result);
+`void rt_at_server_print_result(rt_at_result_t result);`
 
 该函数用于 AT Server 通过串口设备发送命令执行结果到对应的 AT Client 串口设备上。AT 组件提供多种固定的命令执行结果类型，自定义命令时可以直接使用函数返回结果；
  
-+ 参数
-
-    result：命令执行结果类型。    
-
-+ 返回
-
-    无 
+| 参数     | 描述              |
+| :-----   | :-----           |
+|result    | 命令执行结果类型  |
+| **返回** | **描述**         |
+|无        | 无               |
 
 AT 组件中命令执行结果类型以枚举类型给出，如下图所示：
 
@@ -256,23 +250,21 @@ RT_AT_CMD_EXPORT("AT+TEST", =<value1>,<value2>, NULL, NULL, at_test_setup, at_te
 
 #### 解析输入命令参数 ####
 
+`int rt_at_req_parse_args(const char *req_args, const char *req_expr, ...);`
+
 一个 AT 命令的四种功能函数中，只有设置函数有入参，该入参为去除 AT 命令剩余部分，例如一个命令输入为 `"AT+TEST=1,2,3,4"`，则设置函数的入参为参数字符串 `"=1,2,3,4"` 部分。
 
 该命令解析函数主要用于 AT 命令的设置函数中，用于解析传入字符串参数，得到对应的多个输入参数，用于执行后面操作，这里的解析语法使用的标准 `sscanf` 解析语法，后面 AT Client 参数解析函数中会详细介绍。
 
-    int rt_at_req_parse_args(const char *req_args, const char *req_expr, ...);
-
-+ 参数
-
-    req_args：请求命令的传入参数字符串。  
-    req_expr：自定义参数解析表达式，用于解析上述传入参数数据。  
-    ...： 输出的解析参数列表，为可变参数。  
-
-+ 返回
-
-    \>0：成功，返回匹配参数表达式的可变参数个数。  
-     =0：失败，无匹配参数表达式的参数。  
-     <0：失败，参数解析错误。  
+| 参数       | 描述                                           |
+| :-----     | :-----                                        |
+|req_args    | 请求命令的传入参数字符串                        |
+|req_expr    | 自定义参数解析表达式，用于解析上述传入参数数据    |
+|...         | 输出的解析参数列表，为可变参数                  |
+| **返回**   | **描述**                                      |
+|\>0         | 成功，返回匹配参数表达式的可变参数个数           |
+|=0          | 失败，无匹配参数表达式的参数                    |
+|-1          | 失败，参数解析错误                             |
 
 可参考以下代码了解如何使用 rt_at_server_print_result 函数：
 
@@ -307,13 +299,13 @@ AT Server 默认已支持多种基础命令（ATE、ATZ 等），其中部分命
 
 1. 设备重启函数实现
 
-    void rt_at_port_reset(void)
+`void rt_at_port_reset(void);`
 
 该函数完成设备软重启功能，用于 AT Server 中基础命令 AT+RST 的实现。
 
 2. 设备恢复出厂设置函数实现
 
-    void rt_at_port_factory_reset(void)
+`void rt_at_port_factory_reset(void);`
 
 该函数完成设备恢复出厂设置功能，用于 AT Server 中基础命令 ATZ 的实现。
 
@@ -357,7 +349,7 @@ RT-Thread Components  --->
 
 配置开启 AT Client 配置之后，需要在启动时对它进行初始化，开启 AT client 功能，如果程序中已经使用了组件自动初始化，则不再需要额外进行单独的初始化，否则需要在初始化任务中调用如下函数：
 
-    int rt_at_client_init(void)；
+`int rt_at_client_init(void)；`
 
 AT Client 初始化函数，属于应用层函数，需要在使用 AT Client 功能或者使用 AT Client CLI 功能前调用。**rt_at_client_init** 函数完成对 AT Client 设备初始化、AT Client 移植函数的初始化、AT Client 使用的信号量、互斥锁等资源初始化，并创建 `at_client` 线程用于 AT Client 中数据的接收的解析以及对 URC 数据的处理。
 
@@ -392,56 +384,50 @@ AT 组件中，该结构体用于定义一个 AT Server 响应数据的控制块
 
 #### 创建响应结构体 ####
 
-    rt_at_response_t rt_at_create_resp(rt_size_t buf_size, rt_size_t line_num, rt_int32_t timeout);
+`rt_at_response_t rt_at_create_resp(rt_size_t buf_size, rt_size_t line_num, rt_int32_t timeout);`
 
 该函数用于创建自定义的响应数据接收结构，用于后面接收并解析发送命令响应数据。
 
-+ 参数
-
-    buf_size： 本次响应最大支持的接收数据的长度。  
-    line_num： 本次响应需要返回数据的行数，行数是以标准结束符划分。  
-               若为 0 ，则接收到 "OK" 或 "ERROR" 数据后结束本次响应接收。  
-               若大于 0，接收完当前设置行号的数据后返回成功。  
-    timeout：  本次响应数据最大响应时间，数据接收超时返回错误。
-
-+ 返回
-
-    != NULL： 成功，返回指向响应结构体的指针。  
-     = NULL： 失败，内存不足
+| 参数     | 描述                                                  |
+| :-----   | :-----                                               |
+|buf_size  | 本次响应最大支持的接收数据的长度                        |
+|line_num  | 本次响应需要返回数据的行数，行数是以标准结束符划分        |
+|          | 若为 0 ，则接收到 "OK" 或 "ERROR" 数据后结束本次响应接收 |
+|          | 若大于 0，接收完当前设置行号的数据后返回成功             |
+|timeout   | 本次响应数据最大响应时间，数据接收超时返回错误。          |
+| **返回** | **描述**                                              |
+|!= NULL   | 成功，返回指向响应结构体的指针                          |
+|= NULL    |  失败，内存不足                                        |
 
 #### 删除响应结构体 ####
 
-    void rt_at_delete_resp(rt_at_response_t resp);
+`void rt_at_delete_resp(rt_at_response_t resp);`
 
 该函数用于删除创建的响应结构体对象，一般与 **rt_at_create_resp** 创建函数成对出现。
 
-+ 参数
-
-    resp： 准备删除的响应结构体指针。
-
-+ 返回
-
-    无
+| 参数     | 描述                    |
+| :-----   | :-----                 |
+|resp      | 准备删除的回应结构体指针 |
+| **返回** | **描述**               |
+|无        | 无                     |
 
 #### 设置响应结构体参数 ####
 
-    rt_at_response_t rt_at_resp_set_info(rt_at_response_t resp, rt_size_t buf_size, rt_size_t line_num, rt_int32_t timeout);
+`rt_at_response_t rt_at_resp_set_info(rt_at_response_t resp, rt_size_t buf_size, rt_size_t line_num, rt_int32_t timeout);`
 
 该函数用于设置已经创建的响应结构体信息，主要设置对响应数据的限制信息，一般用于创建结构体之后，发送 AT 命令之前。
 
-+ 参数
-
-    resp： 已经创建的响应结构体指针。  
-    buf_size： 本次响应最大支持的接收数据的长度。  
-    line_num： 本次响应需要返回数据的行数，行数是以标准结束符划分。  
-               若为 0 ，则接收到 "OK" 或 "ERROR" 数据后结束本次响应接收。  
-               若大于 0，接收到当前设置行号数据后返回成功。  
-    timeout：  本次响应数据最大响应时间，数据接收超时返回错误。
-
-+ 返回
-
-    != NULL： 成功，返回修改过参数的响应结构体的指针。  
-     = NULL： 失败，内存不足
+| 参数     | 描述                                                  |
+| :-----   | :-----                                               |
+|resp      |已经创建的响应结构体指针                                |
+|buf_size  | 本次响应最大支持的接收数据的长度                        |
+|line_num  | 本次响应需要返回数据的行数，行数是以标准结束符划分        |
+|          | 若为 0 ，则接收到 "OK" 或 "ERROR" 数据后结束本次响应接收 |
+|          | 若大于 0，接收完当前设置行号的数据后返回成功             |
+|timeout   | 本次响应数据最大响应时间，数据接收超时返回错误。          |
+| **返回** | **描述**                                              |
+|!= NULL   | 成功，返回指向响应结构体的指针                          |
+|= NULL    |  失败，内存不足                                       |
 
 
 #### 发送命令并接收响应 ####
@@ -450,17 +436,15 @@ AT 组件中，该结构体用于定义一个 AT Server 响应数据的控制块
 
 该函数用于 AT Client 发送命令到 AT Server，并等待接收响应，其中 `resp` 是已经创建好响应结构体的指针，AT 命令的输入使用匹配表达式的可变参输入。
 
-+ 参数
-
-    resp： 创建的响应结构体指针。  
-    cmd_expr： 自定义输入命令的表达式。    
-    ...： 输入命令数据列表，为可变参数。  
-
-+ 返回
-
-    \>=0： 成功  
-      -1： 失败  
-      -2： 失败，接收响应超时  
+| 参数     | 描述                         |
+| :-----   | :-----                      |
+|resp      | 创建的响应结构体指针          |
+|cmd_expr  | 自定义输入命令的表达式        |
+|...       | 输入命令数据列表，为可变参数  |
+| **返回** | **描述**                    |
+|\>=0       | 成功                        |
+|-1        | 失败                        |
+|-2        | 失败，接收回应超时           |
 
 可参考以下代码了解如何使用以上几个 AT 命令收发相关函数使用方式：
 
@@ -522,40 +506,34 @@ MSH_CMD_EXPORT(at_clinet_send, AT Client send commands to AT Server and get resp
 
 #### 获取指定行号的响应数据 ####
 
-    const char *at_resp_get_line(rt_at_response_t resp, rt_size_t resp_line);
+`const char *at_resp_get_line(rt_at_response_t resp, rt_size_t resp_line);`
 
 该函数用于在 AT Server 响应数据中获取指定行号的一行数据。行号是以标准数据结束符来判断的，上述发送和接收函数 rt_at_exec_cmd 已经对响应数据的数据和行号进行记录处理存放于 resp 响应结构体中，这里可以直接获取对应行号的数据信息。
 
-+ 参数
-
-    resp： 响应结构体指针。  
-    resp_line： 需要获取数据的行号。   
-
-+ 返回
-
-    != NULL： 成功，返回对应行号数据的指针。  
-     = NULL： 失败，输入行号错误。  
-
+| 参数     | 描述                       |
+| :-----   | :-----                    |
+|resp      | 回应结构体指针              |
+|resp_line | 需要获取数据的行号          |
+| **返回** | **描述**                   |
+|!= NULL   | 成功，返回对应行号数据的指针 |
+|= NULL    | 失败，输入行号错误          |
 
 #### 解析指定行号的响应数据 ####
 
-    int at_resp_parse_line_args(rt_at_response_t resp, rt_size_t resp_line, const char *resp_expr, ...);
+`int at_resp_parse_line_args(rt_at_response_t resp, rt_size_t resp_line, const char *resp_expr, ...);`
 
-该函数用于在 AT Server 响应数据中获取指定行号的一行数据, 并解析该行数据中的参数。
+该函数用于在 AT Server 响应数据中获取指定行号的一行数据, 并解析该行数据中的参数。  
 
-+ 参数
-
-    resp： 响应结构体指针。  
-    resp_line： 需要解析数据的行号。
-    resp_expr： 自定义的参数解析表达式。  
-    ...： 解析参数列表，为可变参数。  
-
-+ 返回
-
-    \>0： 成功，返回解析成功的参数个数。  
-     =0： 失败，无匹参配数解析表达式的参数。  
-     -1:  失败，参数解析错误。  
-
+| 参数     | 描述                              |
+| :-----   | :-----                           |
+|resp      | 回应结构体指针                    |
+|resp_line | 需要解析数据的行号                |
+|resp_expr | 自定义的参数解析表达式            |
+|...       | 解析参数列表，为可变参数          |
+| **返回** | **描述**                        |
+|>0        | 成功，返回解析成功的参数个数      |
+|=0        | 失败，无匹参配数解析表达式的参数  |
+|-1        | 失败，参数解析错误               |
 
 数据解析语法介绍：
 
@@ -644,24 +622,22 @@ typedef struct rt_at_urc *rt_at_urc_t;
 
 #### AT Client 移植函数 ####
 
-    int rt_at_client_port_init(void);
+`int rt_at_client_port_init(void);`
 
 该函数为 AT Client 移植初始化函数，完成了整个 AT Client 的移植，改函数中主要对 URC 数据列表进行初始化。
 
 #### URC 数据列表初始化 ####
 
-    void rt_at_set_urc_table(const struct rt_at_urc *table, rt_size_t size)
+`void rt_at_set_urc_table(const struct rt_at_urc *table, rt_size_t size)`
 
 该函数用于初始化开发者自定义的 URC 数据列表，主要在 AT Client 移植函数中使用。
 
-+ 参数
-
-    table： URC 数据结构体数组指针。    
-    size：  URC 数据的个数。     
-
-+ 返回
-
-    无  
+| 参数     | 描述                   |
+| :-----   | :-----                |
+|table     | URC 数据结构体数组指针  |
+|size      | URC 数据的个数         |
+| **返回** | **描述**               |
+|无        | 无                     |
 
 下面给出 AT Client 移植具体示例，该示例主要展示  `rt_at_client_port_init()` 移植函数中 URC 数据的具体处理方式，开发者可直接应用到自己的移植文件中，或者自定义修改实现功能，完成 AT Client 的移植。
 
@@ -702,32 +678,28 @@ int rt_at_client_port_init(void)
 
 #### 发送指定长度数据 ####
 
-    rt_size_t rt_at_client_send(const char *buf, rt_size_t size);
+`rt_size_t rt_at_client_send(const char *buf, rt_size_t size);`
 
 该函数用于通过 AT Client 设备发送指定长度数据到 AT Server 设备，多用于 AT Socket 功能。
 
-+ 参数
-
-    buf： 发送数据的指针；  
-    size： 发送数据的长度；
-
-+ 返回值
-
-    \>0： 成功，返回发送成功的数据长度；  
-    <=0： 失败；
+| 参数     | 描述                       |
+| :-----   | :-----                    |
+|buf       | 发送数据的指针             |
+|size      | 发送数据的长度             |
+| **返回** | **描述**                  |
+|>0       | 成功，返回发送成功的数据长度 |
+|<=0      | 失败                       |
 
 #### 接收指定长度数据 ####
 
-    rt_size_t rt_at_client_recv(char *buf, rt_size_t size);
+`rt_size_t rt_at_client_recv(char *buf, rt_size_t size);`
 
 该函数用于通过 AT Client 设备接收指定长度的数据，多用于 AT Socket 功能。
 
-+ 参数
-
-    buf： 用于接收数据的字符串指针；  
-    size： 最大支持接收数据的长度；
-
-+ 返回值
-
-    \>0： 成功，返回接收成功的数据长度；  
-    <=0： 失败；
+| 参数     | 描述                      |
+| :-----   | :-----                   |
+|buf       | 接收数据的指针            |
+|size      | 最大支持接收数据的长度     |
+| **返回** | **描述**                  |
+|>0       | 成功，返回接收成功的数据长度 |
+|<=0      | 失败                       |
