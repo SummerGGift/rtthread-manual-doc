@@ -314,19 +314,19 @@ AT Server 默认已支持多种基础命令（ATE、ATZ 等），其中部分命
 
 ### AT Client 配置 ###
 
-当我们使用 AT 组件中的 AT Server 功能是需要在 rtconfig.h 中定义如下配置：
+当我们使用 AT 组件中的 AT Client 功能是需要在 rtconfig.h 中定义如下配置：
 
 ```c
 #define RT_USING_AT
 #define RT_AT_USING_CLIENT
 #define RT_AT_CLIENT_DEVICE "uart2"
-#define RT_AT_SERVER_RECV_BUFF_LEN 512
+#define RT_AT_CLIENT_RECV_BUFF_LEN 512
 ```
 
 - `RT_USING_AT`： 用于开启或关闭 AT 组件；
 - `RT_AT_USING_CLIENT`： 用于开启 AT Client 功能；
 - `RT_AT_CLIENT_DEVICE`： 定义设备上 AT Client 功能使用的串口通讯设备的名称，确保未被使用且设备唯一，这里使用的是 `uart2` 设备；
-- `RT_AT_SERVER_RECV_BUFF_LEN`：定义 AT Client 设备最大接收数据的长度；
+- `RT_AT_CLIENT_RECV_BUFF_LEN`：定义 AT Client 设备最大接收数据的长度；
 
 上面配置选项可以直接在 `rtconfig.h` 文件中添加使用，也可以通过组件包管理工具 ENV 配置选项加入，ENV 中具体路径如下：
 
