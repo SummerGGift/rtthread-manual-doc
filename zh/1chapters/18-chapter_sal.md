@@ -370,7 +370,7 @@ SAL 组件抽象出标准 BSD Socket API 接口，如下是对常用网络接口
 - SO_RCVTIMEO：设置套接字数据接收超时
 - SO_SNDTIMEO：设置套接数据发送超时
 
-### 设置套接字选项（getsockopt） ###
+### 获取套接字选项（getsockopt） ###
 
 `int getsockopt (int s, int level, int optname, void *optval, socklen_t *optlen);`
 
@@ -419,7 +419,7 @@ SAL 组件抽象出标准 BSD Socket API 接口，如下是对常用网络接口
 
 ### 配置套接字参数（ioctlsocket） ###
 
-`int ioctlsocket(int s, long cmd, void *arg);`
+`int ioctlsocket (int s, long cmd, void *arg);`
 
 设置套接字控制模式。
 
