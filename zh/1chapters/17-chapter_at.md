@@ -34,7 +34,7 @@ AT 命令集是一种应用于 AT 服务器（AT Server）与 AT 客户端（AT 
 
 AT 组件是基于 RT-Thread 系统的 `AT Server` 和 `AT Client` 的实现，组件完成 AT 命令的发送、命令格式及参数判断、命令的响应、响应数据的接收、响应数据的解析、URC 数据处理等整个 AT 命令数据交互流程。通过 AT 组件设备可以作为 AT Client 使用串口连接其他设备发送并接收解析数据，可以作为 AT Server 让其他设备甚至电脑端连接完成发送数据的响应，也可以在本地 shell 启动 CLI 模式使设备同时支持 AT Server 和 AT Clinet 功能，该模式多用于设备开发调试。
 
-AT 组件中 AT Client 功能占用资源体积为 4.3K ROM 和 2.0K RAM；AT Server 功能占用资源体积为 4.0K ROM 和 2.5K RAM；AT CLI 功能占用资源体积为 1.5K ROM 几乎没有使用 RAM。AT 组件总体资源占用极小，因此非常适用应用于资源有限的嵌入式设备中。
+AT 组件中 AT Client 功能占用资源体积为 4.6K ROM 和 2.0K RAM；AT Server 功能占用资源体积为 4.0K ROM 和 2.5K RAM；AT CLI 功能占用资源体积为 1.5K ROM 几乎没有使用 RAM。AT 组件总体资源占用极小，因此非常适用应用于资源有限的嵌入式设备中。
 
 AT 组件代码主要位于 `rt-thread/components/net/at/` 目录中。主要的功能包括如下,  
 
@@ -312,17 +312,25 @@ AT Server 默认已支持多种基础命令（ATE、ATZ 等），其中部分命
 
 该函数完成设备恢复出厂设置功能，用于 AT Server 中基础命令 ATZ 的实现。
 
-3. 链接脚本中添加命令列表
+3. 链接脚本中添加命令表（gcc 添加，keil、iar 跳过）
 
-```c
-/* section information for RT-thread AT package */
-. = ALIGN(4);
-__rtatcmdtab_start = .;
-KEEP(*(RtAtCmdTab))
-__rtatcmdtab_end = .;
-. = ALIGN(4);
+工程中若使用 `gcc 工具链`，需在链接脚本中添加 AT 服务端命令表对应的 section ，参考如下链接脚本：
+
 ```
-AT Serve 中自定义命令注册在自定义的 section 段，工程中若使用 gcc 编译器，需在链接脚本中添加上述代码用于链接 AT 命令列表；若使用 keil 和 iar 编译器，代码中自动添加支持无需手动添加。
+    /* Constant data goes into FLASH */
+    .rodata :
+    {
+        ...
+
+        /* section information for RT-thread AT package */
+        . = ALIGN(4);
+        __rtatcmdtab_start = .;
+        KEEP(*(RtAtCmdTab))
+        __rtatcmdtab_end = .;
+        . = ALIGN(4);
+    } > CODE
+```
+
 
 ## AT Client ##
 
