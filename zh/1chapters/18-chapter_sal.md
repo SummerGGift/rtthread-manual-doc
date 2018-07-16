@@ -8,7 +8,8 @@
 
 - 抽象、统一多种网络协议栈接口；
 - 支持标准 BSD Socket API；
-- 自定义协议栈注册方式；
+- 自定义协议栈或网络实现的注册方式；
+- 统一的 FD 管理，便于使用 read/write  poll/select 来操作网络功能；
 
 ## 网络框架 ##
 
@@ -18,23 +19,23 @@ RT-Thread 的网络框架主要采用如下结构形式， 如图 **SAL 网络�
 
 最顶层是网络应用层，提供一套标准 BSD Socket API ，如 socket、connect 等函数，用于系统中大部分网络开发应用。
 
-第二部分为文件系统层，在 RT-Thread 系统中，通过 DFS 文件系统程序可以使用标准的接口函数实现不同的文件系统操作。网络套接字接口也是支持文件系统结构，使用网络套接字接口时创建的网络套接字描述符由文件系统统一管理，所以网络套接字描述符也可使用标准文件操作接口，文件系统层为上层应用层提供的接口有：read、write、close、poll等。
+第二部分为文件系统层，在 RT-Thread 系统中，通过 DFS 文件系统程序可以使用标准的接口函数实现不同的文件系统操作。网络套接字接口也是支持文件系统结构，使用网络套接字接口时创建的网络套接字描述符由文件系统统一管理，所以网络套接字描述符也可使用标准文件操作接口，文件系统层为上层应用层提供的接口有：read、write、close、poll/select 等。
 
-第三部分为套接字抽象层，通过它 RT-Thread 系统能够适配下层不同的网络协议栈，并提供给上层统一的网络编程接口，方便不同协议栈的接入。套接字抽象层为上层应用层提供接口有：accept、connect、send、revcv等。
+第三部分为套接字抽象层，通过它 RT-Thread 系统能够适配下层不同的网络协议栈，并提供给上层统一的网络编程接口，方便不同协议栈的接入。套接字抽象层为上层应用层提供接口有：accept、connect、send、recv 等。
 
 第四部分为协议栈层，该层包括几种常用的 TCP/IP 协议栈，例如嵌入式开发中常用的轻型 TCP/IP 协议栈 lwIP 以及 RT-Thread 自主研发的 AT Socket 网络功能实现等。这些协议栈或网络功能实现直接和硬件接触，完成数据从网络层到传输层的转化。
 
-RT-Thread 的网络应用层提供的接口主要以标准 BSD Socket API 为主，这样能确保程序可以在PC 上编写、调试，然后再移植到 RT-Thread 操作系统上。
+RT-Thread 的网络应用层提供的接口主要以标准 BSD Socket API 为主，这样能确保程序可以在 PC 上编写、调试，然后再移植到 RT-Thread 操作系统上。
 
 ## 工作原理 ###
 
-SAL 组件主要实现的两个功能：支持多个协议栈接入和统一抽象接口函数。对于不同的协议栈或网络功能实现，网络接口的名称可能各不相同，以 connect 连接函数为例，lwIP 协议栈中接口名称为 lwip_connect ，而 AT socket 网络实现中接口名称为 at_connect。SAL 组件提供对不同协议栈或网络实现接口的抽象和统一，组件在 socket 创建时通过**判断传入的协议簇（domain）类型来判断使用的协议栈或网络功能**，完成 RT-Thread 系统中多协议的接入与使用。
+SAL 组件主要实现的两个功能：支持多个协议栈接入和统一抽象接口函数。对于不同的协议栈或网络功能实现，网络接口的名称可能各不相同，以 connect 连接函数为例，lwIP 协议栈中接口名称为 lwip_connect ，而 AT Socket 网络实现中接口名称为 at_connect。SAL 组件提供对不同协议栈或网络实现接口的抽象和统一，组件在 socket 创建时通过**判断传入的协议簇（domain）类型来判断使用的协议栈或网络功能**，完成 RT-Thread 系统中多协议的接入与使用。
 
  ```c
     int socket(int domain, int type, int protocol);
  ```
 
-上述为标准 BSD Socket API 中 socket 创建函数的定义，其中 `domain` 表示协议域又称为协议簇（family），用于判断使用哪种协议栈或网络实现，AT Socket 网络实现的协议簇类型为 `AT_AF`，lwIP 协议栈使用协议簇类型有 `AF_INET`、`AF_INET6` 等。开启 lwIP 协议栈支持后，使用 AF_INET 创建网络套接字，则此套接字底层使用 lwIP 协议栈函数实现。
+上述为标准 BSD Socket API 中 socket 创建函数的定义，其中 `domain` 表示协议域又称为协议簇（family），用于判断使用哪种协议栈或网络实现，AT Socket 网络实现的协议簇类型为 `AF_AT`，lwIP 协议栈使用协议簇类型有 `AF_INET`、`AF_INET6` 等。开启 lwIP 协议栈支持后，使用 AF_INET 创建网络套接字，则此套接字底层使用 lwIP 协议栈函数实现。
 
 > AT Socket 是 RT-Thread 自主研发的基于 AT 组件的网络功能实现，其设备的连接和数据的通讯都是通过 AT 命令完成，支持标准 BSD Socket API 。
 
@@ -221,7 +222,6 @@ SAL 组件抽象出标准 BSD Socket API 接口，如下是对常用网络接口
 |0                  | 成功，返回新创建的套接字描述符        |
 |-1                 | 失败                                |
 
-
 ### 建立连接（connect） ###
 
 `int connect(int s, const struct sockaddr *name, socklen_t namelen);`
@@ -340,6 +340,101 @@ SAL 组件抽象出标准 BSD Socket API 接口，如下是对常用网络接口
 - 0： 停止接收当前数据，并拒绝以后的数据接收；
 - 1： 停止发送数据，并丢弃未发送的数据；
 - 2： 停止接收和发送数据。
+
+### 设置套接字选项（setsockopt） ###
+
+`int setsockopt (int s, int level, int optname, const void *optval, socklen_t optlen);`
+
+设置套接字模式，修改套接字配置选项。
+
+| 参数              | 描述                                 |
+|:------------------|:------------------------------------|
+|s                  | 套接字描述符                         |
+|level              | 协议栈配置选项                       |
+|optname            | 需要设置的选项名                     |
+|optval             | 设置选项值的缓冲区地址               |
+|optlen             | 设置选项值的缓冲区长度               |
+| **返回**          | **描述**                            |
+|=0                 | 成功                                |
+|<0                 | 失败                                |
+
+**level**
+
+- SOL_SOCKET：套接字层
+- IPPROTO_TCP：TCP层
+- IPPROTO_IP：IP层 
+
+**optname**
+
+- SO_KEEPALIVE：设置保持连接选项
+- SO_RCVTIMEO：设置套接字数据接收超时
+- SO_SNDTIMEO：设置套接数据发送超时
+
+### 设置套接字选项（getsockopt） ###
+
+`int getsockopt (int s, int level, int optname, void *optval, socklen_t *optlen);`
+
+获取套接字配置选项。
+
+| 参数              | 描述                                 |
+|:------------------|:------------------------------------|
+|s                  | 套接字描述符                         |
+|level              | 协议栈配置选项                       |
+|optname            | 需要设置的选项名                     |
+|optval             | 获取选项值的缓冲区地址                |
+|optlen             | 获取选项值的缓冲区长度地址            |
+| **返回**          | **描述**                            |
+|=0                 | 成功                                |
+|<0                 | 失败                                |
+
+### 获取远端地址信息（getpeername） ###
+
+`int getpeername (int s, struct sockaddr *name, socklen_t *namelen);`
+
+获取与套接字相连的远端地址信息。
+
+| 参数              | 描述                                 |
+|:------------------|:------------------------------------|
+|s                  | 套接字描述符                         |
+|name               | 接收信息的地址结构体指针              |
+|namelen            | 接收信息的地址结构体长度              |
+| **返回**          | **描述**                            |
+|=0                 | 成功                                |
+|<0                 | 失败                                |
+
+### 获取本地地址信息（getsockname） ###
+
+`int getsockname (int s, struct sockaddr *name, socklen_t *namelen);`
+
+获取本地套接字地址信息。
+
+| 参数              | 描述                                 |
+|:------------------|:------------------------------------|
+|s                  | 套接字描述符                         |
+|name               | 接收信息的地址结构体指针              |
+|namelen            | 接收信息的地址结构体长度              |
+| **返回**          | **描述**                            |
+|=0                 | 成功                                |
+|<0                 | 失败                                |
+
+### 配置套接字参数（ioctlsocket） ###
+
+`int ioctlsocket(int s, long cmd, void *arg);`
+
+设置套接字控制模式。
+
+| 参数              | 描述                                 |
+|:------------------|:------------------------------------|
+|s                  | 套接字描述符                         |
+|cmd               | 套接字操作命令                        |
+|arg               | 操作命令所带参数                      |
+| **返回**          | **描述**                            |
+|=0                 | 成功                                |
+|<0                 | 失败                                |
+
+**cmd**
+
+- FIONBIO：开启或关闭套接字的非阻塞模式，arg 参数 1 为开启非阻塞，0 为关闭非阻塞。
 
 ## 网络协议栈接入方式 ##
 
