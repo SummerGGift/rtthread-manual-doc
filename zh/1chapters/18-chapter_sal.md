@@ -96,6 +96,7 @@ int lwip_connect(int socket, const struct sockaddr *name, socklen_t namelen)
 #define RT_USING_SAL
 #define SAL_USING_LWIP
 #define SAL_USING_AT
+#define SAL_USING_POSIX
 #define SAL_PROTO_FAMILIES_NUM 4
 ```
 
@@ -105,6 +106,7 @@ int lwip_connect(int socket, const struct sockaddr *name, socklen_t namelen)
 
 > 目前 SAL 抽象层只支持 lwIP 协 议栈和 AT Socket 协议栈，系统中开启 SAL 需要至少开启一种协议栈支持。
 
+- `SAL_USING_POSIX`： 用于开启 POSIX 文件系统相关函数支持，如 read、write、select/poll 等；
 - `SAL_PROTO_FAMILIES_NUM`: 支持最大的同时开启的协议栈或网络实现数量；
 
 上面配置选项可以直接在 `rtconfig.h` 文件中添加使用，也可以通过组件包管理工具 ENV 配置选项加入，ENV 工具中具体配置路径如下：
@@ -115,7 +117,8 @@ RT-Thread Components  --->
         Socket abstraction layer  --->  
         [*] Enable socket abstraction layer
                protocol family type  --->
-         (4)   the number of protocol family 
+        [*]    Enable BSD socket operated by file system API
+        (4)    the number of protocol family 
 ```
 
 配置完成可以通过 scons 命令重新生成功能，完成 SAL 组件的添加。
@@ -239,7 +242,7 @@ SAL 组件抽象出标准 BSD Socket API 接口，如下是对常用网络接口
 
 ### TCP 数据发送（send） ###
 
-`send(int s, const void *dataptr, size_t size, int flags);`
+`int send(int s, const void *dataptr, size_t size, int flags);`
 
 发送数据，常用于 TCP 连接。
 
@@ -343,7 +346,7 @@ SAL 组件抽象出标准 BSD Socket API 接口，如下是对常用网络接口
 
 ### 设置套接字选项（setsockopt） ###
 
-`int setsockopt (int s, int level, int optname, const void *optval, socklen_t optlen);`
+`int setsockopt(int s, int level, int optname, const void *optval, socklen_t optlen);`
 
 设置套接字模式，修改套接字配置选项。
 
@@ -372,7 +375,7 @@ SAL 组件抽象出标准 BSD Socket API 接口，如下是对常用网络接口
 
 ### 获取套接字选项（getsockopt） ###
 
-`int getsockopt (int s, int level, int optname, void *optval, socklen_t *optlen);`
+`int getsockopt(int s, int level, int optname, void *optval, socklen_t *optlen);`
 
 获取套接字配置选项。
 
@@ -389,7 +392,7 @@ SAL 组件抽象出标准 BSD Socket API 接口，如下是对常用网络接口
 
 ### 获取远端地址信息（getpeername） ###
 
-`int getpeername (int s, struct sockaddr *name, socklen_t *namelen);`
+`int getpeername(int s, struct sockaddr *name, socklen_t *namelen);`
 
 获取与套接字相连的远端地址信息。
 
@@ -404,7 +407,7 @@ SAL 组件抽象出标准 BSD Socket API 接口，如下是对常用网络接口
 
 ### 获取本地地址信息（getsockname） ###
 
-`int getsockname (int s, struct sockaddr *name, socklen_t *namelen);`
+`int getsockname(int s, struct sockaddr *name, socklen_t *namelen);`
 
 获取本地套接字地址信息。
 
@@ -419,7 +422,7 @@ SAL 组件抽象出标准 BSD Socket API 接口，如下是对常用网络接口
 
 ### 配置套接字参数（ioctlsocket） ###
 
-`int ioctlsocket (int s, long cmd, void *arg);`
+`int ioctlsocket(int s, long cmd, void *arg);`
 
 设置套接字控制模式。
 
@@ -454,9 +457,12 @@ struct proto_family
 };
 ```
 
-`family` 为每个协议栈支持的主协议簇类型，例如 lwIP 的为 AF_INET ，AT Socket 为 AF_AT。`sec_family` 为每个协议栈支持的次协议簇类型，用于支持单个协议栈或网络实现时，匹配软件包中其他类型的协议簇类型。`create` 函数主要是对 socket 相关执行函数的注册，例如 connect、close 等函数的，将当前协议栈的执行函数注册进创建的 SAL 组件中 socket 结构体中。其他几个函数为套接字无关执行函数，用于匹配每个协议栈或网络实现中的执行函数。
+- `family`： 每个协议栈支持的主协议簇类型，例如 lwIP 的为 AF_INET ，AT Socket 为 AF_AT。
+- `sec_family`：每个协议栈支持的次协议簇类型，用于支持单个协议栈或网络实现时，匹配软件包中其他类型的协议簇类型。
+- `create`： 主要是对 socket 相关执行函数的注册，例如 connect、close 等函数的，将当前协议栈的执行函数注册进创建的 SAL 组件中 socket 结构体中。
+- 其他函数： 为套接字无关执行函数，用于匹配每个协议栈或网络实现中的执行函数。
 
-以下为 AT Socket 网络实现的注册流程，开发者可参考实现其他的协议栈或网络实现的接入：
+以下为 AT Socket 网络实现的接入注册流程，开发者可参考实现其他的协议栈或网络实现的接入：
 
 ```c
 #include <netdb.h>          
@@ -511,25 +517,26 @@ static int at_poll(struct dfs_fd *file, struct rt_pollreq *req)
 /* 定义和赋值 Socket 执行函数，每个创建的新 Socket 套接字存在该执行函数存放与 Socket 结构体中，当执行相关函数是调用 */
 static const struct proto_ops at_inet_stream_ops =
 {
-    .socket =           at_socket,
-    .closesocket =      at_closesocket,
-    .bind =             at_bind,
-    .listen =           NULL,
-    .connect =          at_connect,
-    .accept =           NULL,
-    .sendto =           at_sendto,
-    .recvfrom =         at_recvfrom,
-    .getsockopt =       at_getsockopt,
-    .setsockopt =       at_setsockopt,
-    .shutdown =         at_shutdown,
-    .getpeername =      NULL,
-    .getsockname =      NULL,
-    .ioctlsocket =      NULL,
-#ifdef RT_USING_DFS_NET
-    .poll =             at_poll,
+    at_socket,
+    at_closesocket,
+    at_bind,
+    NULL,
+    at_connect,
+    NULL,
+    at_sendto,
+    at_recvfrom,
+    at_getsockopt,
+    at_setsockopt,
+    at_shutdown,
+    NULL,
+    NULL,
+    NULL,
+
+#ifdef SAL_USING_POSIX
+    at_poll,
 #else
-    .poll =             NULL,
-#endif /* RT_USING_DFS_NET */
+    NULL,
+#endif /* SAL_USING_POSIX */
 };
 
 static int at_create(struct socket *socket, int type, int protocol)
@@ -541,14 +548,14 @@ static int at_create(struct socket *socket, int type, int protocol)
 }
 
 static const struct proto_family at_inet_family_ops = {
-    .family = AF_AT,
-    .sec_family = AF_INET,
-    .create = at_create,
+    AF_AT,
+    AF_INET,
+    at_create,
     /* Socket 套接字无关函数，由协议簇结构体注册 */
-    .gethostbyname =    at_gethostbyname,
-    .gethostbyname_r =  NULL,
-    .freeaddrinfo =     at_freeaddrinfo,
-    .getaddrinfo =      at_getaddrinfo,
+    at_gethostbyname,
+    NULL,
+    at_freeaddrinfo,
+    at_getaddrinfo,
 };
 
 int at_inet_init(void)
