@@ -2,9 +2,7 @@
 
 ## 简介 ##
 
-为了适配更多的网络协议栈类型，避免系统对单一网络协议栈的依赖，RT-Thread 系统提供了一套 SAL（套接字抽象层）组件，该组件完成对不同网络协议栈或网络实现接口的抽象并对上层提供一组标准的 BSD Socket API，这样开发者只需要关心和使用网络应用层提供的网络接口，而无需关心底层具体网络协议栈类型和实现，极大的提搞的系统的兼容性，方便开发者完成协议栈的适配和网络相关的开发。
-
-主要功能特点：
+为了适配更多的网络协议栈类型，避免系统对单一网络协议栈的依赖，RT-Thread 系统提供了一套 SAL（套接字抽象层）组件，该组件完成对不同网络协议栈或网络实现接口的抽象并对上层提供一组标准的 BSD Socket API，这样开发者只需要关心和使用网络应用层提供的网络接口，而无需关心底层具体网络协议栈类型和实现，极大的提高了系统的兼容性，方便开发者完成协议栈的适配和网络相关的开发。SAL 组件主要功能特点：
 
 - 抽象、统一多种网络协议栈接口；
 - 支持标准 BSD Socket API；
@@ -31,21 +29,14 @@ RT-Thread 的网络应用层提供的接口主要以标准 BSD Socket API 为主
 
 SAL 组件主要实现的两个功能：支持多个协议栈接入和统一抽象接口函数。对于不同的协议栈或网络功能实现，网络接口的名称可能各不相同，以 connect 连接函数为例，lwIP 协议栈中接口名称为 lwip_connect ，而 AT Socket 网络实现中接口名称为 at_connect。SAL 组件提供对不同协议栈或网络实现接口的抽象和统一，组件在 socket 创建时通过**判断传入的协议簇（domain）类型来判断使用的协议栈或网络功能**，完成 RT-Thread 系统中多协议的接入与使用。
 
- ```c
     int socket(int domain, int type, int protocol);
- ```
 
-上述为标准 BSD Socket API 中 socket 创建函数的定义，其中 `domain` 表示协议域又称为协议簇（family），用于判断使用哪种协议栈或网络实现，AT Socket 网络实现的协议簇类型为 `AF_AT`，lwIP 协议栈使用协议簇类型有 `AF_INET`、`AF_INET6` 等。开启 lwIP 协议栈支持后，使用 AF_INET 创建网络套接字，则此套接字底层使用 lwIP 协议栈函数实现。
-
-> AT Socket 是 RT-Thread 自主研发的基于 AT 组件的网络功能实现，其设备的连接和数据的通讯都是通过 AT 命令完成，支持标准 BSD Socket API 。
+上述为标准 BSD Socket API 中 socket 创建函数的定义，其中 `domain` 表示协议域又称为协议簇（family），用于判断使用哪种协议栈或网络实现，AT Socket 网络实现的协议簇类型为 `AF_AT`，lwIP 协议栈使用协议簇类型有 `AF_INET`、`AF_INET6` 等。开启 lwIP 协议栈支持后，使用 AF_INET 创建网络套接字，则此套接字底层使用 lwIP 协议栈函数实现。AT Socket 是 RT-Thread 自主研发的基于 AT 组件的网络功能实现，其设备的连接和数据的通讯都是通过 AT 命令完成，支持标准 BSD Socket API 。
 
 目前 RT-Thread 系统中网络软件包或网络功能的 socket 创建函数中协议簇类型固定，若要支持不同的协议栈或网络实现需要修改传入的协议簇类型。为了适配不同协议栈或网络实现，SAL 组件中对于每个协议栈或者网络实现提供两种协议簇类型匹配方式：**主协议簇类型和次协议簇类型**。socket 创建时先判断传入协议簇类型是否存在已经支持的主协议类型，如果是则使用对应协议栈或网络实现，如果不是判断次协议簇类型是否支持。目前系统支持协议簇类型如下：
 
- ```c
     lwIP 协议栈： family = AF_INET、sec_family = AF_INET
-
     AT Socket 网络实现： family = AF_AT、sec_family = AF_INET
- ```
 
  对于 SAL 组件中协议簇的支持，组件中每个协议簇类型存在一个协议簇结构体，由协议簇结构体列表统一管理，协议簇结构体中定义了该协议栈的执行函数，如 lwIP 协议栈中的 lwip_socket()、lwip_connect() 等。 SAL 组件中创建的每个 socket 也存在结构体定义，由 socket 结构体列表统一管理，socket 结构体中存放当前 socket 的执行函数和基本信息，在 socket 创建时通过判断传入协议簇类型，注册对应协议簇执行函数到 socket 结构体执行函数中。之后，使用该 socket 进行函数操作时，主要是获取 socket 结构体中的协议簇执行函数，完成函数操作。如下为 SAL 组件中 connect 函数抽象实现示例：
 
@@ -111,15 +102,13 @@ int lwip_connect(int socket, const struct sockaddr *name, socklen_t namelen)
 
 上面配置选项可以直接在 `rtconfig.h` 文件中添加使用，也可以通过组件包管理工具 ENV 配置选项加入，ENV 工具中具体配置路径如下：
 
-```C
-RT-Thread Components  ---> 
-     Network stack  --->
-        Socket abstraction layer  --->  
-        [*] Enable socket abstraction layer
-               protocol family type  --->
-        [*]    Enable BSD socket operated by file system API
-        (4)    the number of protocol family 
-```
+    RT-Thread Components  ---> 
+        Network stack  --->
+            Socket abstraction layer  --->  
+            [*] Enable socket abstraction layer
+                protocol family type  --->
+            [*]    Enable BSD socket operated by file system API
+            (4)    the number of protocol family 
 
 配置完成可以通过 scons 命令重新生成功能，完成 SAL 组件的添加。
 
@@ -137,13 +126,13 @@ RT-Thread Components  --->
 
 如果开启 lwIP 支持，需要在 SAL 组件中对 lwIP 协议栈的进行注册初始化，主要是在 `sal_socket/proto/lwip/af_inet_lwip.c` 文件中完成，如果文件中已经完成自动初始化则可忽略，如果没有则需要调用如下初始化函数：
 
-    int lwip_inet_init(void)；
+    int lwip_inet_init(void);
 
 ### AT Socket网络功能注册 ###
 
 如果开启 AT Socket 支持，需要在 SAL 组件中对于 AT Socket 协议栈的进行注册初始化，主要是在 `sal_socket/proto/at/src/af_inet_at.c` 文件中完成，如果文件中已经完成自动初始化则可忽略，如果没有则需要调用如下初始化函数：
 
-    int at_inet_init(void)；
+    int at_inet_init(void);
 
 初始化完成之后就可以正常使用 SAL 组件，使用抽象的标准 BSD Socket API 编程。
 
