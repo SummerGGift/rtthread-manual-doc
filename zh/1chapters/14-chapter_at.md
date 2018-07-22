@@ -61,55 +61,53 @@ AT Server 主要功能特点：
 
 ```c
 #define RT_USING_AT
-#define RT_AT_USING_SERVER
-#define RT_AT_SERVER_DEVICE "uart3"
-#define RT_AT_SERVER_RECV_BUFF_LEN 256
-#define RT_AT_CMD_END_MARK_CRLF
-#define RT_AT_USING_CLI
+#define AT_USING_SERVER
+#define AT_SERVER_DEVICE "uart3"
+#define AT_SERVER_RECV_BUFF_LEN 256
+#define AT_CMD_END_MARK_CRLF
+#define AT_USING_CLI
 ```
 
 - `RT_USING_AT`： 用于开启或关闭 AT 组件；
-- `RT_AT_USING_SERVER`： 用于开启 AT Server 功能；
-- `RT_AT_SERVER_DEVICE`： 定义设备上 AT Server 功能使用的串口通讯设备名称，确保未被使用且设备名称唯一，这里使用的是 `uart3` 设备；
-- `RT_AT_SERVER_RECV_BUFF_LEN`：定义 AT Server 设备最大接收数据的长度；
-- `RT_AT_CMD_END_MARK_CRLF`： 定义用于判断接收命令的行结束符；
-- `RT_AT_USING_CLI`： 用于开启或关闭服务端命令行交互模式。
+- `AT_USING_SERVER`： 用于开启 AT Server 功能；
+- `AT_SERVER_DEVICE`： 定义设备上 AT Server 功能使用的串口通讯设备名称，确保未被使用且设备名称唯一，这里使用的是 `uart3` 设备；
+- `AT_SERVER_RECV_BUFF_LEN`：定义 AT Server 设备最大接收数据的长度；
+- `AT_CMD_END_MARK_CRLF`： 定义用于判断接收命令的行结束符；
+- `AT_USING_CLI`： 用于开启或关闭服务端命令行交互模式。
 
 对于不同的 AT 设备，发送命令的行结束符的格式有几种： "\r\n"、"\r"、"\n"，用户需要根据 AT Server 连接的设备类型选用对应的行结束符，进而判断发送命令行的结束， 定义的方式如下：
 
 | 宏定义 | 结束符 |
 | ----  | ---- |
-| RT_AT_CMD_END_MARK_CRLF | "\r\n" |
-| RT_AT_CMD_END_MARK_CR   | "\r"   |
-| RT_AT_CMD_END_MARK_LF   | "\n"   |
+| AT_CMD_END_MARK_CRLF | "\r\n" |
+| AT_CMD_END_MARK_CR   | "\r"   |
+| AT_CMD_END_MARK_LF   | "\n"   |
 
 AT 组件中还提供了如下两种调试功能，用户可以通过定义宏定义开启调试模式，或者开启实时显示数据模式：
 
 ```c
-#define RT_AT_DEBUG
-#define RT_AT_PRINT_RAW_CMD
+#define AT_DEBUG
+#define AT_PRINT_RAW_CMD
 ```
 
-- `RT_AT_DEBUG`：用于开启 AT 组件 DEBUG 模式，可以显示更多调试日志信息。
-- `RT_AT_PRINT_RAW_CMD`：用于开启实时显示 AT 命令通信数据模式，方便调试。
+- `AT_DEBUG`：用于开启 AT 组件 DEBUG 模式，可以显示更多调试日志信息。
+- `AT_PRINT_RAW_CMD`：用于开启实时显示 AT 命令通信数据模式，方便调试。
 
 上面配置选项可以直接在 `rtconfig.h` 文件中添加使用，也可以通过组件包管理工具 ENV 配置选项加入，ENV 中具体路径如下：
 
-```C
-RT-Thread Components  ---> 
-     Network  --->
-        AT commands  --->
-             [*] Enable AT commands 
-             [*]   Enable debug log output    
-             [*] Enable AT commands server
-             (uart3) Server device name
-             (256)   The maximum length of server data accepted
-                     The commands new line sign (\r\n)  ---> 
-             [ ]   Enable AT commands client
-             [*]   Enable command-line interface for AT commands          
-             [ ]   Enable print RAW format AT command communication data
-            
-```
+    RT-Thread Components  ---> 
+        Network  --->
+            AT commands  --->
+                [*] Enable AT commands 
+                [*]   Enable debug log output    
+                [*] Enable AT commands server
+                (uart3) Server device name
+                (256)   The maximum length of server data accepted
+                        The commands new line sign (\r\n)  ---> 
+                [ ]   Enable AT commands client
+                [*]   Enable command-line interface for AT commands          
+                [ ]   Enable print RAW format AT command communication data
+
 
 添加配置完成之后可以使用命令行重新生成工程，或使用scons来进行编译生成。
 
@@ -117,9 +115,9 @@ RT-Thread Components  --->
 
 配置开启 AT Server 配置之后，需要在启动时对它进行初始化，开启 AT Server 功能，如果程序中已经使用了组件自动初始化，则不再需要额外进行单独的初始化，否则需要在初始化任务中调用如下函数：
 
-`int rt_at_server_init(void);`
+    int at_server_init(void); 
 
-AT Server 初始化函数，属于应用层函数，需要在使用 AT Server 功能或者使用 AT Server CLI 功能前调用。**rt_at_server_init** 函数完成对 AT 命令存放数据段初始化、AT Server 设备初始化以及 AT Server 使用的信号量等资源的初始化，并创建 `at_server` 线程用于 AT Server 中数据的接收的解析。
+AT Server 初始化函数，属于应用层函数，需要在使用 AT Server 功能或者使用 AT Server CLI 功能前调用。**at_server_init** 函数完成对 AT 命令存放数据段初始化、AT Server 设备初始化以及 AT Server 使用的信号量等资源的初始化，并创建 `at_server` 线程用于 AT Server 中数据的接收的解析。
 
 AT Server 初始化成功之后，设备就可以作为 AT 服务器与 AT 客户端的串口设备连接并进行数据通讯，或者使用串口转化工具连接 PC，使 PC 端串口调试助手作为 AT 客户端与其进行数据通讯。
 
@@ -145,7 +143,7 @@ AT 命令根据传入的参数格式不同可以实现不同的功能，对于�
 
 每个命令的四种功能并不需要全部实现，用户自定义添加 AT Server 命令时，可根据自己需求实现一种或几种上述功能函数，未实现的功能可以使用 `NULL` 表示，再通过自定义命令添加函数添加到基础命令列表，添加方式类似于 `finsh/msh` 命令添加方式，添加函数如下：
 
-`RT_AT_CMD_EXPORT(_name_, _args_expr_, _test_, _query_, _setup_, _exec_)`
+    AT_CMD_EXPORT(_name_, _args_expr_, _test_, _query_, _setup_, _exec_);
 
 - `_name_ `：AT 命令名称；
 - `_args_expr_`：AT 命令参数表达式；（无参数为NULL，`<>` 中为必选参数，`[]` 中为可选参数）
@@ -157,27 +155,27 @@ AT 命令根据传入的参数格式不同可以实现不同的功能，对于�
 如下为 AT 命令注册示例，`AT+TEST` 命令存在两个参数，第一个参数为必选参数，第二个参数为可选参数，命令实现查询功能和执行功能：
 
 ```c
-static rt_at_result_t at_test_exec(void)
+static at_result_t at_test_exec(void)
 {
-    rt_at_server_printfln("AT test commands execute!");
+    at_server_printfln("AT test commands execute!");
 
     return 0;
 }
-static rt_at_result_t at_test_query(void)
+static at_result_t at_test_query(void)
 {
-    rt_at_server_printfln("AT+TEST=1,2");
+    at_server_printfln("AT+TEST=1,2");
 
     return 0;
 }
 
-RT_AT_CMD_EXPORT("AT+TEST", =<value1>[,<value2>], NULL, at_test_query, NULL, at_test_exec);
+AT_CMD_EXPORT("AT+TEST", =<value1>[,<value2>], NULL, at_test_query, NULL, at_test_exec);
 ```
 
 ### AT Server API 接口 ###
 
 #### 发送数据至客户端（不换行） ####
 
-`void rt_at_server_printf(const char *format, ...);`
+    void at_server_printf(const char *format, ...);
 
 该函数用于 AT Server 通过串口设备发送固定格式的数据到对应的 AT Client 串口设备上，数据结尾不带换行符。用于自定义 AT Server 中 AT 命令的功能函数中。
 
@@ -191,7 +189,7 @@ RT_AT_CMD_EXPORT("AT+TEST", =<value1>[,<value2>], NULL, at_test_query, NULL, at_
 
 ### 发送数据至客户端（换行） ####
 
-`void rt_at_server_printfln(const char *format, ...);`
+    void at_server_printfln(const char *format, ...);
 
  该函数用于 AT Server 通过串口设备发送固定格式的数据到对应的 AT Client 串口设备上，数据结尾带换行符。用于自定义 AT Server 中 AT 命令的功能函数中。
  
@@ -204,7 +202,7 @@ RT_AT_CMD_EXPORT("AT+TEST", =<value1>[,<value2>], NULL, at_test_query, NULL, at_
 
 #### 发送命令执行结果至客户端 ####
 
-`void rt_at_server_print_result(rt_at_result_t result);`
+    void at_server_print_result(at_result_t result);
 
 该函数用于 AT Server 通过串口设备发送命令执行结果到对应的 AT Client 串口设备上。AT 组件提供多种固定的命令执行结果类型，自定义命令时可以直接使用函数返回结果；
  
@@ -225,35 +223,35 @@ AT 组件中命令执行结果类型以枚举类型给出，如下图所示：
 |AT_RESULT_CHECK_FAILE    | 参数表达式匹配错误  |
 |AT_RESULT_PARSE_FAILE    | 参数解析错误   |
 
-可参考以下代码了解如何使用 rt_at_server_print_result 函数：
+可参考以下代码了解如何使用 at_server_print_result 函数：
 
 ```c
-static rt_at_result_t at_test_setup(const char *args)
+static at_result_t at_test_setup(const char *args)
 {
     if(!args)
     {
         /* 如果传入的命令之后的参数错误，返回表达式匹配错误结果 */
-        rt_at_server_print_result(AT_RESULT_CHECK_FAILE);  
+        at_server_print_result(AT_RESULT_CHECK_FAILE);  
     }
 
     /* 正常情况下返回执行成功结果 */
-    rt_at_server_print_result(AT_RESULT_OK);
+    at_server_print_result(AT_RESULT_OK);
     return 0;
 }
-static rt_at_result_t at_test_exec(void)
+static at_result_t at_test_exec(void)
 {
     // execute some functions of the AT command.
 
     /* 该命令不需要返回结果 */
-    rt_at_server_print_result(AT_RESULT_NULL);
+    at_server_print_result(AT_RESULT_NULL);
     return 0;
 }
-RT_AT_CMD_EXPORT("AT+TEST", =<value1>,<value2>, NULL, NULL, at_test_setup, at_test_exec);
+AT_CMD_EXPORT("AT+TEST", =<value1>,<value2>, NULL, NULL, at_test_setup, at_test_exec);
 ``` 
 
 #### 解析输入命令参数 ####
 
-`int rt_at_req_parse_args(const char *req_args, const char *req_expr, ...);`
+    int at_req_parse_args(const char *req_args, const char *req_expr, ...);
 
 一个 AT 命令的四种功能函数中，只有设置函数有入参，该入参为去除 AT 命令剩余部分，例如一个命令输入为 `"AT+TEST=1,2,3,4"`，则设置函数的入参为参数字符串 `"=1,2,3,4"` 部分。
 
@@ -269,46 +267,46 @@ RT_AT_CMD_EXPORT("AT+TEST", =<value1>,<value2>, NULL, NULL, at_test_setup, at_te
 |=0          | 失败，无匹配参数表达式的参数                    |
 |-1          | 失败，参数解析错误                             |
 
-可参考以下代码了解如何使用 rt_at_server_print_result 函数：
+可参考以下代码了解如何使用 at_server_print_result 函数：
 
 ```c
-static rt_at_result_t at_test_setup(const char *args)
+static at_result_t at_test_setup(const char *args)
 {
     int value1,value2;
 
     /* args 的输入标准格式应为 "=1,2"，"=%d,%d" 为自定义参数解析表达式，解析得到结果存入value1 和 value2 变量 */
-    if (rt_at_req_parse_args(args, "=%d,%d", &value1, &value2) > 0)
+    if (at_req_parse_args(args, "=%d,%d", &value1, &value2) > 0)
     {
         /* 数据解析成功，回显数据到 AT Server 串口设备 */
-        rt_at_server_printfln("value1 : %d, value2 : %d", value1, value2);
+        at_server_printfln("value1 : %d, value2 : %d", value1, value2);
         
         /* 数据解析成功，解析参数的个数大于零，返回执行成功 */
-        rt_at_server_print_result(AT_RESULT_OK);
+        at_server_print_result(AT_RESULT_OK);
     }
     else
     {
         /* 数据解析失败，解析参数的个数不大于零，返回解析失败结果类型 */
-        rt_at_server_print_result(AT_RESULT_PARSE_FAILE);
+        at_server_print_result(AT_RESULT_PARSE_FAILE);
     }
     return 0;
 }
 /* 添加 "AT+TEST" 命令到 AT 命令列表，命令参数格式为两个必选参数 <value1> 和 <value2>  */
-RT_AT_CMD_EXPORT("AT+TEST", =<value1>,<value2>, NULL, NULL, at_test_setup, NULL);
+AT_CMD_EXPORT("AT+TEST", =<value1>,<value2>, NULL, NULL, at_test_setup, NULL);
 ```
 
 #### 移植相关接口 ####
 
-AT Server 默认已支持多种基础命令（ATE、ATZ 等），其中部分命令的函数实现与硬件或平台相关，需要用户自定义实现。AT 组件源码 `src/rt_at_client.c` 文件中给出了移植文件的弱函数定义，用户可在项目中新建移植文件实现如下函数完成移植接口，也可以直接在文件中修改弱函数完成移植接口。
+AT Server 默认已支持多种基础命令（ATE、ATZ 等），其中部分命令的函数实现与硬件或平台相关，需要用户自定义实现。AT 组件源码 `src/at_client.c` 文件中给出了移植文件的弱函数定义，用户可在项目中新建移植文件实现如下函数完成移植接口，也可以直接在文件中修改弱函数完成移植接口。
 
 1. 设备重启函数实现
 
-`void rt_at_port_reset(void);`
+    void at_port_reset(void);
 
 该函数完成设备软重启功能，用于 AT Server 中基础命令 AT+RST 的实现。
 
 2. 设备恢复出厂设置函数实现
 
-`void rt_at_port_factory_reset(void);`
+    void at_port_factory_reset(void);
 
 该函数完成设备恢复出厂设置功能，用于 AT Server 中基础命令 ATZ 的实现。
 
@@ -316,7 +314,6 @@ AT Server 默认已支持多种基础命令（ATE、ATZ 等），其中部分命
 
 工程中若使用 `gcc 工具链`，需在链接脚本中添加 AT 服务端命令表对应的 section ，参考如下链接脚本：
 
-```
     /* Constant data goes into FLASH */
     .rodata :
     {
@@ -329,7 +326,6 @@ AT Server 默认已支持多种基础命令（ATE、ATZ 等），其中部分命
         __rtatcmdtab_end = .;
         . = ALIGN(4);
     } > CODE
-```
 
 
 ## AT Client ##
@@ -340,32 +336,30 @@ AT Server 默认已支持多种基础命令（ATE、ATZ 等），其中部分命
 
 ```c
 #define RT_USING_AT
-#define RT_AT_USING_CLIENT
-#define RT_AT_CLIENT_DEVICE "uart2"
-#define RT_AT_CLIENT_RECV_BUFF_LEN 512
+#define AT_USING_CLIENT
+#define AT_CLIENT_DEVICE "uart2"
+#define AT_CLIENT_RECV_BUFF_LEN 512
 ```
 
 - `RT_USING_AT`： 用于开启或关闭 AT 组件；
-- `RT_AT_USING_CLIENT`： 用于开启 AT Client 功能；
-- `RT_AT_CLIENT_DEVICE`： 定义设备上 AT Client 功能使用的串口通讯设备的名称，确保未被使用且设备唯一，这里使用的是 `uart2` 设备；
-- `RT_AT_CLIENT_RECV_BUFF_LEN`：定义 AT Client 设备最大接收数据的长度；
-- `RT_AT_USING_CLI`： 用于开启或关闭客户端命令行交互模式。
+- `AT_USING_CLIENT`： 用于开启 AT Client 功能；
+- `AT_CLIENT_DEVICE`： 定义设备上 AT Client 功能使用的串口通讯设备的名称，确保未被使用且设备唯一，这里使用的是 `uart2` 设备；
+- `AT_CLIENT_RECV_BUFF_LEN`：定义 AT Client 设备最大接收数据的长度；
+- `AT_USING_CLI`： 用于开启或关闭客户端命令行交互模式。
 
 上面配置选项可以直接在 `rtconfig.h` 文件中添加使用，也可以通过组件包管理工具 ENV 配置选项加入，ENV 中具体路径如下：
 
-```C
-RT-Thread Components  ---> 
-     Network stack  --->
-        AT commands  --->
-             [*] Enable AT commands 
-             [ ]   Enable debug log output    
-             [ ]   Enable AT commands server
-             [*]   Enable AT commands client
-             (uart2) Client device name
-             (512)   The maximum length of client data accepted  
-             [*]   Enable command-line interface for AT commands       
-             [ ]   Enable print RAW format AT command communication data           
-```
+    RT-Thread Components  ---> 
+        Network stack  --->
+            AT commands  --->
+                [*] Enable AT commands 
+                [ ]   Enable debug log output    
+                [ ]   Enable AT commands server
+                [*]   Enable AT commands client
+                (uart2) Client device name
+                (512)   The maximum length of client data accepted  
+                [*]   Enable command-line interface for AT commands       
+                [ ]   Enable print RAW format AT command communication data  
 
 添加配置完成之后可以使用命令行重新生成工程，或使用 scons 来进行编译生成。
 
@@ -373,9 +367,9 @@ RT-Thread Components  --->
 
 配置开启 AT Client 配置之后，需要在启动时对它进行初始化，开启 AT client 功能，如果程序中已经使用了组件自动初始化，则不再需要额外进行单独的初始化，否则需要在初始化任务中调用如下函数：
 
-`int rt_at_client_init(void)；`
+    int at_client_init(void);
 
-AT Client 初始化函数，属于应用层函数，需要在使用 AT Client 功能或者使用 AT Client CLI 功能前调用。**rt_at_client_init** 函数完成对 AT Client 设备初始化、AT Client 移植函数的初始化、AT Client 使用的信号量、互斥锁等资源初始化，并创建 `at_client` 线程用于 AT Client 中数据的接收的解析以及对 URC 数据的处理。
+AT Client 初始化函数，属于应用层函数，需要在使用 AT Client 功能或者使用 AT Client CLI 功能前调用。**at_client_init** 函数完成对 AT Client 设备初始化、AT Client 移植函数的初始化、AT Client 使用的信号量、互斥锁等资源初始化，并创建 `at_client` 线程用于 AT Client 中数据的接收的解析以及对 URC 数据的处理。
 
 ### 数据收发 ###
 
@@ -384,7 +378,7 @@ AT Client 主要功能是发送 AT 命令、接收数据并解析数据。下面
 相关结构体定义：
 
 ```c
-struct rt_at_response
+struct at_response
 {
     /* response buffer */
     char *buf;
@@ -399,7 +393,7 @@ struct rt_at_response
     /* the maximum response time */
     rt_int32_t timeout;
 };
-typedef struct rt_at_response *rt_at_response_t;
+typedef struct at_response *at_response_t;
 ```
 
 AT 组件中，该结构体用于定义一个 AT Server 响应数据的控制块，用于存放或者限制 AT Server 返回数据的部分格式。其中 `buf` 用于存放接收到的响应数据，注意的是 buf 中存放的数据并不是原始响应数据，而是原始响应数据去除结束符（"\r\n"）的数据，buf 中每行数据以 '\0' 分割，方便按行获取数据。`buf_size` 为用户自定义本次响应最大支持的接收数据的长度，由用户根据自己命令返回值长度定义。`line_num` 为用户自定义的本次响应数据需要接收的行数，如果没有行数限定需求可以置为 0。 `line_counts` 用于记录本次响应数据总行数。`timeout` 为用户自定义的本次响应数据最大响应时间。该结构体中 `buf_size`、`line_num`、`timeout` 三个参数为限制条件，在结构体创建时设置，其他参数为存放数据参数，用于后面数据解析。
@@ -408,7 +402,7 @@ AT 组件中，该结构体用于定义一个 AT Server 响应数据的控制块
 
 #### 创建响应结构体 ####
 
-`rt_at_response_t rt_at_create_resp(rt_size_t buf_size, rt_size_t line_num, rt_int32_t timeout);`
+    at_response_t at_create_resp(rt_size_t buf_size, rt_size_t line_num, rt_int32_t timeout);
 
 该函数用于创建自定义的响应数据接收结构，用于后面接收并解析发送命令响应数据。
 
@@ -425,9 +419,9 @@ AT 组件中，该结构体用于定义一个 AT Server 响应数据的控制块
 
 #### 删除响应结构体 ####
 
-`void rt_at_delete_resp(rt_at_response_t resp);`
+    void at_delete_resp(at_response_t resp);
 
-该函数用于删除创建的响应结构体对象，一般与 **rt_at_create_resp** 创建函数成对出现。
+该函数用于删除创建的响应结构体对象，一般与 **at_create_resp** 创建函数成对出现。
 
 | 参数     | 描述                    |
 | :-----   | :-----                 |
@@ -437,7 +431,7 @@ AT 组件中，该结构体用于定义一个 AT Server 响应数据的控制块
 
 #### 设置响应结构体参数 ####
 
-`rt_at_response_t rt_at_resp_set_info(rt_at_response_t resp, rt_size_t buf_size, rt_size_t line_num, rt_int32_t timeout);`
+    at_response_t at_resp_set_info(at_response_t resp, rt_size_t buf_size, rt_size_t line_num, rt_int32_t timeout);`
 
 该函数用于设置已经创建的响应结构体信息，主要设置对响应数据的限制信息，一般用于创建结构体之后，发送 AT 命令之前。
 
@@ -456,7 +450,7 @@ AT 组件中，该结构体用于定义一个 AT Server 响应数据的控制块
 
 #### 发送命令并接收响应 ####
 
-`rt_err_t rt_at_exec_cmd(rt_at_response_t resp, const char *cmd_expr, ...);`
+    rt_err_t at_exec_cmd(at_response_t resp, const char *cmd_expr, ...);`
 
 该函数用于 AT Client 发送命令到 AT Server，并等待接收响应，其中 `resp` 是已经创建好的响应结构体的指针，AT 命令的使用匹配表达式的可变参输入，**输入命令的结尾不需要添加命令结束符** 。
 
@@ -478,11 +472,11 @@ AT 组件中，该结构体用于定义一个 AT Server 响应数据的控制块
  */
 
 #include <rtthread.h>
-#include <rt_at.h>   /* AT 组件头文件 */
+#include <at.h>   /* AT 组件头文件 */
 
 int at_client_send(int argc, char **argv)
 {
-    rt_at_response_t resp = RT_NULL;
+    at_response_t resp = RT_NULL;
 
     if (argc != 2)
     {
@@ -491,7 +485,7 @@ int at_client_send(int argc, char **argv)
     }
 
     /* 创建响应结构体，设置最大支持响应数据长度为 512 字节，响应数据行数无限制，超时时间为 5 秒 */
-    resp = rt_at_create_resp(512, 0, rt_tick_from_millisecond(5000));
+    resp = at_create_resp(512, 0, rt_tick_from_millisecond(5000));
     if (!resp)
     {
         LOG_E("No memory for response structure!");
@@ -499,7 +493,7 @@ int at_client_send(int argc, char **argv)
     }
    
     /* 发送 AT 命令并接收 AT Server 响应数据，数据及信息存放在 resp 结构体中 */
-    if (rt_at_exec_cmd(resp, argv[1]) != RT_EOK)
+    if (at_exec_cmd(resp, argv[1]) != RT_EOK)
     {
         LOG_E("AT client send commands failed, response error or timeout !");
         return -ET_ERROR;
@@ -509,7 +503,7 @@ int at_client_send(int argc, char **argv)
     LOG_D("AT Client send commands to AT Server success!");
 
     /* 删除响应结构体 */
-    rt_at_delete_resp(resp);
+    at_delete_resp(resp);
 
     return RT_EOK;
 }
@@ -520,7 +514,7 @@ MSH_CMD_EXPORT(at_clinet_send, AT Client send commands to AT Server and get resp
 #endif
 ```
 
-发送和接收数据的实现原理比较简单，主要是对 AT Client 绑定的串口设备的读写操作，并设置相关行数和超时来限制响应数据，值得注意的是，正常情况下需要先创建 resp 响应结构体传入 rt_at_exec_cmd 函数用于数据的接收，当 rt_at_exec_cmd 函数传入 resp 为 NULL 时说明本次发送数据**不考虑处理响应数据直接返回结果**。
+发送和接收数据的实现原理比较简单，主要是对 AT Client 绑定的串口设备的读写操作，并设置相关行数和超时来限制响应数据，值得注意的是，正常情况下需要先创建 resp 响应结构体传入 at_exec_cmd 函数用于数据的接收，当 at_exec_cmd 函数传入 resp 为 NULL 时说明本次发送数据**不考虑处理响应数据直接返回结果**。
 
 ### 数据解析 ###
 
@@ -530,9 +524,9 @@ MSH_CMD_EXPORT(at_clinet_send, AT Client send commands to AT Server and get resp
 
 #### 获取指定行号的响应数据 ####
 
-`const char *at_resp_get_line(rt_at_response_t resp, rt_size_t resp_line);`
+    const char *at_resp_get_line(at_response_t resp, rt_size_t resp_line);
 
-该函数用于在 AT Server 响应数据中获取指定行号的一行数据。行号是以标准数据结束符来判断的，上述发送和接收函数 rt_at_exec_cmd 已经对响应数据的数据和行号进行记录处理存放于 resp 响应结构体中，这里可以直接获取对应行号的数据信息。
+该函数用于在 AT Server 响应数据中获取指定行号的一行数据。行号是以标准数据结束符来判断的，上述发送和接收函数 at_exec_cmd 已经对响应数据的数据和行号进行记录处理存放于 resp 响应结构体中，这里可以直接获取对应行号的数据信息。
 
 | 参数     | 描述                       |
 | :-----   | :-----                    |
@@ -544,7 +538,7 @@ MSH_CMD_EXPORT(at_clinet_send, AT Client send commands to AT Server and get resp
 
 #### 获取指定行号的响应数据 ####
 
-`const char *at_resp_get_line_by_kw(rt_at_response_t resp, const char *keyword)`
+    const char *at_resp_get_line_by_kw(at_response_t resp, const char *keyword);
 
 该函数用于在 AT Server 响应数据中通过关键字获取对应的一行数据。
 
@@ -558,7 +552,7 @@ MSH_CMD_EXPORT(at_clinet_send, AT Client send commands to AT Server and get resp
 
 #### 解析指定行号的响应数据 ####
 
-`int at_resp_parse_line_args(rt_at_response_t resp, rt_size_t resp_line, const char *resp_expr, ...);`
+    int at_resp_parse_line_args(at_response_t resp, rt_size_t resp_line, const char *resp_expr, ...);
 
 该函数用于在 AT Server 响应数据中获取指定行号的一行数据, 并解析该行数据中的参数。  
 
@@ -592,10 +586,10 @@ MSH_CMD_EXPORT(at_clinet_send, AT Client send commands to AT Server and get resp
 
 ```c
 /* 创建服务器响应结构体，64 为用户自定义接收数据最大长度 */
-resp = rt_at_create_resp(64, 0, rt_tick_from_millisecond(5000));
+resp = at_create_resp(64, 0, rt_tick_from_millisecond(5000));
 
 /* 发送数据到服务器，并接收响应数据存放在 resp 结构体中 */
-rt_at_exec_cmd(resp, "AT+UART?");
+at_exec_cmd(resp, "AT+UART?");
 
 /* 解析获取串口配置信息，1 表示解析响应数据第一行，'%*[^=]'表示忽略等号之前的数据 */
 at_resp_parse_line_args(resp, 1,"%*[^=]=%d,%d,%d,%d,%d", &baudrate, &databits,
@@ -604,7 +598,7 @@ printf("baudrate=%d, databits=%d, stopbits=%d, parity=%d, control=%d\n",
         baudrate, databits, stopbits, parity, control);
 
 /* 删除服务器响应结构体 */
-rt_at_delete_resp(resp);
+at_delete_resp(resp);
 ```
 
 #### IP和MAC地址解析示例 ####
@@ -623,20 +617,19 @@ rt_at_delete_resp(resp);
 
 ```c
 /* 创建服务器响应结构体，128 为用户自定义接收数据最大长度 */
-resp = rt_at_create_resp(128, 0, rt_tick_from_millisecond(5000));
+resp = at_create_resp(128, 0, rt_tick_from_millisecond(5000));
 
-rt_at_exec_cmd(resp, "AT+IPMAC?");
+at_exec_cmd(resp, "AT+IPMAC?");
 
 /* 自定义解析表达式，解析当前行号数据中的信息 */
 at_resp_parse_line_args(resp, 1,"IP=%s", ip);   
 at_resp_parse_line_args(resp, 2,"MAC=%s", mac);
 printf("IP=%s, MAC=%s\n", ip, mac);
 
-rt_at_delete_resp(resp);
+at_delete_resp(resp);
 ```
 
 解析数据的关键在于解析表达式的正确定义，因为对于 AT 设备的响应数据，不同设备厂家不同命令的响应数据格式不唯一，所以只能提供自定义解析表达式的形式获取需要信息，at_resp_parse_line_args 解析参数函数的设计基于 `sscanf` 数据解析方式，开发者使用之前需要先了解基本的解析语法，再结合响应数据设计合适的解析语法。如果开发者不需要解析具体参数，可以直接使用 at_resp_get_line 函数获取一行的具体数据。
-
 
 ### URC 数据处理 ###
 
@@ -645,13 +638,13 @@ URC 数据的处理是 AT Clinet 另一个重要功能，URC 数据为服务器�
 相关结构体：
 
 ```c
-struct rt_at_urc
+struct at_urc
 {
     const char *cmd_prefix;             // URC 数据前缀
     const char *cmd_suffix;             // URC 数据后缀
     void (*func)(const char *data, rt_size_t size);     // URC 数据执行函数
 };
-typedef struct rt_at_urc *rt_at_urc_t;
+typedef struct at_urc *at_urc_t;
 ```
 
 每种 URC 数据都有一个结构体控制块，用于定义判断 URC 数据的前缀和后缀，以及 URC 数据的执行函数。一段数据只有完全匹配 URC 的前缀和后缀才能定义为 URC 数据，获取到匹配的 URC 数据后会立刻执行 URC 数据执行函数。所以开发者添加一个 URC 数据需要自定义匹配的前缀、后缀和执行函数。
@@ -660,13 +653,13 @@ typedef struct rt_at_urc *rt_at_urc_t;
 
 #### AT Client 移植函数 ####
 
-`int rt_at_client_port_init(void);`
+    int at_client_port_init(void);
 
 该函数为 AT Client 移植初始化函数，完成了整个 AT Client 的移植，改函数中主要对 URC 数据列表进行初始化。
 
 #### URC 数据列表初始化 ####
 
-`void rt_at_set_urc_table(const struct rt_at_urc *table, rt_size_t size)`
+    void at_set_urc_table(const struct at_urc *table, rt_size_t size);
 
 该函数用于初始化开发者自定义的 URC 数据列表，主要在 AT Client 移植函数中使用。
 
@@ -677,7 +670,7 @@ typedef struct rt_at_urc *rt_at_urc_t;
 | **返回** | **描述**               |
 |无        | 无                     |
 
-下面给出 AT Client 移植具体示例，该示例主要展示  `rt_at_client_port_init()` 移植函数中 URC 数据的具体处理方式，开发者可直接应用到自己的移植文件中，或者自定义修改实现功能，完成 AT Client 的移植。
+下面给出 AT Client 移植具体示例，该示例主要展示  `at_client_port_init()` 移植函数中 URC 数据的具体处理方式，开发者可直接应用到自己的移植文件中，或者自定义修改实现功能，完成 AT Client 的移植。
 
 ```c
 static void urc_conn_func(const char *data, rt_size_t size)
@@ -698,16 +691,16 @@ static void urc_func(const char *data, rt_size_t size)
     LOG_D("AT Server device startup!");
 }
 
-static struct rt_at_urc urc_table[] = {
+static struct at_urc urc_table[] = {
     {"WIFI CONNECTED",   "\r\n",     urc_conn_func},
     {"+RECV",            ":",        urc_recv_func},
     {"RDY",              "\r\n",     urc_func},
 };
 
-int rt_at_client_port_init(void)
+int at_client_port_init(void)
 {
     /* 添加多种 URC 数据至 URC 列表中，当接收到同时匹配 URC 前缀和后缀的数据，执行 URC 函数  */
-    rt_at_set_urc_table(urc_table, sizeof(urc_table) / sizeof(urc_table[0]));
+    at_set_urc_table(urc_table, sizeof(urc_table) / sizeof(urc_table[0]));
     return RT_EOK;
 }
 ```
@@ -716,7 +709,7 @@ int rt_at_client_port_init(void)
 
 #### 发送指定长度数据 ####
 
-`rt_size_t rt_at_client_send(const char *buf, rt_size_t size);`
+    rt_size_t at_client_send(const char *buf, rt_size_t size);
 
 该函数用于通过 AT Client 设备发送指定长度数据到 AT Server 设备，多用于 AT Socket 功能。
 
@@ -730,7 +723,7 @@ int rt_at_client_port_init(void)
 
 #### 接收指定长度数据 ####
 
-`rt_size_t rt_at_client_recv(char *buf, rt_size_t size);`
+    rt_size_t at_client_recv(char *buf, rt_size_t size);
 
 该函数用于通过 AT Client 设备接收指定长度的数据，多用于 AT Socket 功能。**该函数只能在 URC 回调处理函数中使用**。
 
