@@ -339,6 +339,7 @@ AT Server 默认已支持多种基础命令（ATE、ATZ 等），其中部分命
 #define AT_USING_CLIENT
 #define AT_CLIENT_DEVICE "uart2"
 #define AT_CLIENT_RECV_BUFF_LEN 512
+#define AT_USING_CLI
 ```
 
 - `RT_USING_AT`： 用于开启或关闭 AT 组件；
