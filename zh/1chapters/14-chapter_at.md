@@ -2,9 +2,9 @@
 
 ## 背景 ##
 
-AT 命令集（AT Commands）最早是由拨号调制解调器（MODEM）的发明者贺氏公司（Hayes）为了控制 Modem 发明的控制协议。后随着网络带宽的升级，速度很低的拨号 MODEM 基本退出一般使用市场，但是 AT 命令保留下来。当时主要的移动电话生产厂家共同为 GSM 研制了一整套 AT 命令，用于控制手机的 GSM 模块。AT 命令在此基础上演化并加入 GSM 07.05 标准以及后来的 GSM 07.07 标准，实现比较健全的标准化。
+AT 命令集（AT Commands）最早是由拨号调制解调器（MODEM）的发明者贺氏公司（Hayes）为了控制 MODEM 发明的控制协议。后随着网络带宽的升级，速度很低的拨号 MODEM 基本退出一般使用市场，但是 AT 命令保留下来。当时主要的移动电话生产厂家共同为 GSM 研制了一整套 AT 命令，用于控制手机的 GSM 模块。AT 命令在此基础上演化并加入 GSM 07.05 标准以及后来的 GSM 07.07 标准，实现比较健全的标准化。
 
-在随后的 GPRM 控制、3G 模块等方面，均采用的 AT 命令来控制，AT 命令逐渐在产品开发中成为实际的标准。如今，AT 命令集也广泛的应用于嵌入式开发领域，AT 命令集作为主芯片和通讯模块的协议接口，硬件接口一般为串口，这样主控设备可以通过简单的命令和硬件设计完成多种操作。
+在随后的 GPRS 控制、3G 模块等方面，均采用的 AT 命令来控制，AT 命令逐渐在产品开发中成为实际的标准。如今，AT 命令集也广泛的应用于嵌入式开发领域，AT 命令集作为主芯片和通讯模块的协议接口，硬件接口一般为串口，这样主控设备可以通过简单的命令和硬件设计完成多种操作。
 
 ## 简介 ##
 
@@ -73,7 +73,7 @@ AT Server 主要功能特点：
 - `AT_SERVER_DEVICE`： 定义设备上 AT Server 功能使用的串口通讯设备名称，确保未被使用且设备名称唯一，这里使用的是 `uart3` 设备；
 - `AT_SERVER_RECV_BUFF_LEN`：定义 AT Server 设备最大接收数据的长度；
 - `AT_CMD_END_MARK_CRLF`： 定义用于判断接收命令的行结束符；
-- `AT_USING_CLI`： 用于开启或关闭服务端命令行交互模式。
+- `AT_USING_CLI`： 用于开启或关闭服务器命令行交互模式。
 
 对于不同的 AT 设备，发送命令的行结束符的格式有几种： "\r\n"、"\r"、"\n"，用户需要根据 AT Server 连接的设备类型选用对应的行结束符，进而判断发送命令行的结束， 定义的方式如下：
 
@@ -187,12 +187,12 @@ AT_CMD_EXPORT("AT+TEST", =<value1>[,<value2>], NULL, at_test_query, NULL, at_tes
 |无        | 无                        |
 
 
-### 发送数据至客户端（换行） ####
+#### 发送数据至客户端（换行） ####
 
     void at_server_printfln(const char *format, ...);
 
  该函数用于 AT Server 通过串口设备发送固定格式的数据到对应的 AT Client 串口设备上，数据结尾带换行符。用于自定义 AT Server 中 AT 命令的功能函数中。
- 
+
 | 参数     | 描述                     |
 | :-----   | :-----                  |
 |format    | 自定义输入数据的表达式    |
@@ -205,7 +205,7 @@ AT_CMD_EXPORT("AT+TEST", =<value1>[,<value2>], NULL, at_test_query, NULL, at_tes
     void at_server_print_result(at_result_t result);
 
 该函数用于 AT Server 通过串口设备发送命令执行结果到对应的 AT Client 串口设备上。AT 组件提供多种固定的命令执行结果类型，自定义命令时可以直接使用函数返回结果；
- 
+
 | 参数     | 描述              |
 | :-----   | :-----           |
 |result    | 命令执行结果类型  |
@@ -247,7 +247,7 @@ static at_result_t at_test_exec(void)
     return 0;
 }
 AT_CMD_EXPORT("AT+TEST", =<value1>,<value2>, NULL, NULL, at_test_setup, at_test_exec);
-``` 
+```
 
 #### 解析输入命令参数 ####
 
@@ -312,13 +312,13 @@ AT Server 默认已支持多种基础命令（ATE、ATZ 等），其中部分命
 
 3. 链接脚本中添加命令表（gcc 添加，keil、iar 跳过）
 
-工程中若使用 `gcc 工具链`，需在链接脚本中添加 AT 服务端命令表对应的 section ，参考如下链接脚本：
+工程中若使用 `gcc 工具链`，需在链接脚本中添加 AT 服务器命令表对应的 section ，参考如下链接脚本：
 
     /* Constant data goes into FLASH */
     .rodata :
     {
         ...
-
+    
         /* section information for RT-thread AT package */
         . = ALIGN(4);
         __rtatcmdtab_start = .;
@@ -350,10 +350,10 @@ AT Server 默认已支持多种基础命令（ATE、ATZ 等），其中部分命
 上面配置选项可以直接在 `rtconfig.h` 文件中添加使用，也可以通过组件包管理工具 ENV 配置选项加入，ENV 中具体路径如下：
 
     RT-Thread Components  ---> 
-        Network stack  --->
+        Network  --->
             AT commands  --->
                 [*] Enable AT commands 
-                [ ]   Enable debug log output    
+                [ ]   Enable debug log output
                 [ ]   Enable AT commands server
                 [*]   Enable AT commands client
                 (uart2) Client device name
@@ -371,7 +371,7 @@ AT Server 默认已支持多种基础命令（ATE、ATZ 等），其中部分命
 
 AT Client 初始化函数，属于应用层函数，需要在使用 AT Client 功能或者使用 AT Client CLI 功能前调用。**at_client_init** 函数完成对 AT Client 设备初始化、AT Client 移植函数的初始化、AT Client 使用的信号量、互斥锁等资源初始化，并创建 `at_client` 线程用于 AT Client 中数据的接收的解析以及对 URC 数据的处理。
 
-### 数据收发 ###
+### 数据收发方式 ###
 
 AT Client 主要功能是发送 AT 命令、接收数据并解析数据。下面是对 AT Client 数据接收和发送相关流程与函数介绍。
 
@@ -516,7 +516,7 @@ MSH_CMD_EXPORT(at_clinet_send, AT Client send commands to AT Server and get resp
 
 发送和接收数据的实现原理比较简单，主要是对 AT Client 绑定的串口设备的读写操作，并设置相关行数和超时来限制响应数据，值得注意的是，正常情况下需要先创建 resp 响应结构体传入 at_exec_cmd 函数用于数据的接收，当 at_exec_cmd 函数传入 resp 为 NULL 时说明本次发送数据**不考虑处理响应数据直接返回结果**。
 
-### 数据解析 ###
+### 数据解析方式 ###
 
 数据正常获取之后，需要对响应的数据进行解析处理，这也是 AT Client 重要的功能之一。 AT Client 中数据的解析提供自定义解析表达式的解析形式，其解析语法使用标准的 `sscanf` 解析语法。开发者可以通过自定义数据解析表达式回去响应数据中有用信息，前提是开发者需要提前查看相关手册了解 AT Client 连接的 AT Server 设备响应数据的基本格式。下面通过几个函数和例程简单 AT Client 数据解析方式。
 
@@ -567,21 +567,36 @@ MSH_CMD_EXPORT(at_clinet_send, AT Client send commands to AT Server and get resp
 |=0        | 失败，无匹参配数解析表达式的参数  |
 |-1        | 失败，参数解析错误               |
 
-数据解析语法介绍：
+#### 解析指定关键字行的响应数据 ####
+
+    int at_resp_parse_line_args_by_kw(at_response_t resp, const char *keyword, const char *resp_expr, ...);
+
+该函数用于在 AT Server 响应数据中获取包含关键字的一行数据, 并解析该行数据中的参数。  
+
+| 参数     | 描述                              |
+| :-----   | :-----                           |
+|resp      | 回应结构体指针                    |
+|keyword   | 关键字信息                       |
+|resp_expr | 自定义的参数解析表达式            |
+|...       | 解析参数列表，为可变参数          |
+| **返回** | **描述**                        |
+|>0        | 成功，返回解析成功的参数个数      |
+|=0        | 失败，无匹参配数解析表达式的参数  |
+|-1        | 失败，参数解析错误               |
 
 数据解析语法使用标准 `sscanf` 解析语法，语法的内容比较多，开发者可以自行搜索其解析语法，这里使用两个例程介绍简单使用方法。
 
 #### 串口配置信息解析示例 ####
 
 客户端发送的数据：
-    
+​    
     AT+UART?
 
 客户端获取的响应数据：
-    
+​    
     UART=115200,8,1,0,0\r\n
     OK\r\n
-  
+
 解析伪代码如下：
 
 ```c
@@ -604,7 +619,7 @@ at_delete_resp(resp);
 #### IP和MAC地址解析示例 ####
 
 客户端发送的数据：
-    
+​    
      AT+IPMAC?
 
 服务器获取的响应数据：
@@ -650,12 +665,6 @@ typedef struct at_urc *at_urc_t;
 每种 URC 数据都有一个结构体控制块，用于定义判断 URC 数据的前缀和后缀，以及 URC 数据的执行函数。一段数据只有完全匹配 URC 的前缀和后缀才能定义为 URC 数据，获取到匹配的 URC 数据后会立刻执行 URC 数据执行函数。所以开发者添加一个 URC 数据需要自定义匹配的前缀、后缀和执行函数。
 
 相关 API 接口
-
-#### AT Client 移植函数 ####
-
-    int at_client_port_init(void);
-
-该函数为 AT Client 移植初始化函数，完成了整个 AT Client 的移植，改函数中主要对 URC 数据列表进行初始化。
 
 #### URC 数据列表初始化 ####
 
@@ -734,3 +743,12 @@ int at_client_port_init(void)
 | **返回** | **描述**                  |
 |>0       | 成功，返回接收成功的数据长度 |
 |<=0      | 失败                       |
+
+#### 移植相关接口
+
+```
+int at_client_port_init(void);
+
+```
+
+该函数为 AT Client 移植初始化函数，完成了整个 AT Client 的移植，改函数中主要对 URC 数据列表进行初始化。
