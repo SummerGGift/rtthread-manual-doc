@@ -1,10 +1,10 @@
-# AT Commands #
+# AT 命令 #
 
 ## 背景 ##
 
-AT 命令集（AT Commands）最早是由拨号调制解调器（MODEM）的发明者贺氏公司（Hayes）为了控制 MODEM 发明的控制协议。后随着网络带宽的升级，速度很低的拨号 MODEM 基本退出一般使用市场，但是 AT 命令保留下来。当时主要的移动电话生产厂家共同为 GSM 研制了一整套 AT 命令，用于控制手机的 GSM 模块。AT 命令在此基础上演化并加入 GSM 07.05 标准以及后来的 GSM 07.07 标准，实现比较健全的标准化。
+AT 命令（AT Commands）最早是由拨号调制解调器（MODEM）的发明者贺氏公司（Hayes）为了控制 MODEM 发明的控制协议。后随着网络带宽的升级，速度很低的拨号 MODEM 基本退出一般使用市场，但是 AT 命令保留下来。当时主要的移动电话生产厂家共同为 GSM 研制了一整套 AT 命令，用于控制手机的 GSM 模块。AT 命令在此基础上演化并加入 GSM 07.05 标准以及后来的 GSM 07.07 标准，实现比较健全的标准化。
 
-在随后的 GPRS 控制、3G 模块等方面，均采用的 AT 命令来控制，AT 命令逐渐在产品开发中成为实际的标准。如今，AT 命令集也广泛的应用于嵌入式开发领域，AT 命令集作为主芯片和通讯模块的协议接口，硬件接口一般为串口，这样主控设备可以通过简单的命令和硬件设计完成多种操作。
+在随后的 GPRS 控制、3G 模块等方面，均采用的 AT 命令来控制，AT 命令逐渐在产品开发中成为实际的标准。如今，AT 命令也广泛的应用于嵌入式开发领域，AT 命令作为主芯片和通讯模块的协议接口，硬件接口一般为串口，这样主控设备可以通过简单的命令和硬件设计完成多种操作。
 
 ## 简介 ##
 
@@ -218,7 +218,7 @@ AT 组件中命令执行结果类型以枚举类型给出，如下图所示：
 | :-----          | :-----  |
 |AT_RESULT_OK             | 命令执行成功   |
 |AT_RESULT_FAILE          | 命令执行失败   |
-|AT_RESULT_NULL           | 无返回     |
+|AT_RESULT_NULL           | 命令无返回结果 |
 |AT_RESULT_CMD_ERR        | 输入命令错误   |
 |AT_RESULT_CHECK_FAILE    | 参数表达式匹配错误  |
 |AT_RESULT_PARSE_FAILE    | 参数解析错误   |
@@ -537,7 +537,7 @@ MSH_CMD_EXPORT(at_clinet_send, AT Client send commands to AT Server and get resp
 |!= NULL   | 成功，返回对应行号数据的指针 |
 |= NULL    | 失败，输入行号错误          |
 
-#### 获取指定行号的响应数据 ####
+#### 获取指定关键字的响应数据 ####
 
     const char *at_resp_get_line_by_kw(at_response_t resp, const char *keyword);
 
