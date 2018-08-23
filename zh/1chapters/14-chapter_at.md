@@ -32,7 +32,7 @@ AT 命令集是一种应用于 AT 服务器（AT Server）与 AT 客户端（AT 
 
 ### AT 组件介绍 ###
 
-AT 组件是基于 RT-Thread 系统的 `AT Server` 和 `AT Client` 的实现，组件完成 AT 命令的发送、命令格式及参数判断、命令的响应、响应数据的接收、响应数据的解析、URC 数据处理等整个 AT 命令数据交互流程。通过 AT 组件设备可以作为 AT Client 使用串口连接其他设备发送并接收解析数据，可以作为 AT Server 让其他设备甚至电脑端连接完成发送数据的响应，也可以在本地 shell 启动 CLI 模式使设备同时支持 AT Server 和 AT Clinet 功能，该模式多用于设备开发调试。
+AT 组件是基于 RT-Thread 系统的 `AT Server` 和 `AT Client` 的实现，组件完成 AT 命令的发送、命令格式及参数判断、命令的响应、响应数据的接收、响应数据的解析、URC 数据处理等整个 AT 命令数据交互流程。通过 AT 组件设备可以作为 AT Client 使用串口连接其他设备发送并接收解析数据，可以作为 AT Server 让其他设备甚至电脑端连接完成发送数据的响应，也可以在本地 shell 启动 CLI 模式使设备同时支持 AT Server 和 AT Client 功能，该模式多用于设备开发调试。
 
 AT 组件中 AT Client 功能占用资源体积为 4.6K ROM 和 2.0K RAM；AT Server 功能占用资源体积为 4.0K ROM 和 2.5K RAM；AT CLI 功能占用资源体积为 1.5K ROM 几乎没有使用 RAM。AT 组件总体资源占用极小，因此非常适用应用于资源有限的嵌入式设备中。
 
@@ -52,6 +52,7 @@ AT Server 主要功能特点：
  - 数据解析： 支持自定义响应数据的解析方式，方便获取响应数据中相关信息；
  - 调试模式： 提供 AT Client CLI 命令行交互模式，主要用于设备调试。
  - AT Socket：作为 AT Client 功能的延伸，使用 AT 命令收发作为基础，实现标准的 BSD Socket API，完成数据的收发功能，使用户通过 AT 命令完成设备连网和数据通讯。
+ - 多客户端支持： AT 组件目前支持多客户端同时运行。
 
 ## AT Server ##
 
@@ -296,7 +297,7 @@ AT_CMD_EXPORT("AT+TEST", =<value1>,<value2>, NULL, NULL, at_test_setup, NULL);
 
 #### 移植相关接口 ####
 
-AT Server 默认已支持多种基础命令（ATE、ATZ 等），其中部分命令的函数实现与硬件或平台相关，需要用户自定义实现。AT 组件源码 `src/at_client.c` 文件中给出了移植文件的弱函数定义，用户可在项目中新建移植文件实现如下函数完成移植接口，也可以直接在文件中修改弱函数完成移植接口。
+AT Server 默认已支持多种基础命令（ATE、ATZ 等），其中部分命令的函数实现与硬件或平台相关，需要用户自定义实现。AT 组件源码 `src/server.c` 文件中给出了移植文件的弱函数定义，用户可在项目中新建移植文件实现如下函数完成移植接口，也可以直接在文件中修改弱函数完成移植接口。
 
 1. 设备重启函数实现
 
@@ -337,15 +338,15 @@ AT Server 默认已支持多种基础命令（ATE、ATZ 等），其中部分命
 ```c
 #define RT_USING_AT
 #define AT_USING_CLIENT
-#define AT_CLIENT_DEVICE "uart2"
-#define AT_CLIENT_RECV_BUFF_LEN 512
+#define AT_CLIENT_NUM_MAX 1
+#define AT_USING_SOCKET
 #define AT_USING_CLI
 ```
 
 - `RT_USING_AT`： 用于开启或关闭 AT 组件；
 - `AT_USING_CLIENT`： 用于开启 AT Client 功能；
-- `AT_CLIENT_DEVICE`： 定义设备上 AT Client 功能使用的串口通讯设备的名称，确保未被使用且设备唯一，这里使用的是 `uart2` 设备；
-- `AT_CLIENT_RECV_BUFF_LEN`：定义 AT Client 设备最大接收数据的长度；
+- `AT_CLIENT_NUM_MAX`： 最大同时支持的 AT 客户端数量
+- `AT_USING_SOCKET`：用于 AT 客户端支持标准 BSD Socket API，开启 AT Socket 功能。
 - `AT_USING_CLI`： 用于开启或关闭客户端命令行交互模式。
 
 上面配置选项可以直接在 `rtconfig.h` 文件中添加使用，也可以通过组件包管理工具 ENV 配置选项加入，ENV 中具体路径如下：
@@ -368,11 +369,11 @@ AT Server 默认已支持多种基础命令（ATE、ATZ 等），其中部分命
 
 配置开启 AT Client 配置之后，需要在启动时对它进行初始化，开启 AT client 功能，如果程序中已经使用了组件自动初始化，则不再需要额外进行单独的初始化，否则需要在初始化任务中调用如下函数：
 
-    int at_client_init(void);
+    int at_client_init(const char *dev_name,  rt_size_t recv_bufsz);
 
 AT Client 初始化函数，属于应用层函数，需要在使用 AT Client 功能或者使用 AT Client CLI 功能前调用。**at_client_init** 函数完成对 AT Client 设备初始化、AT Client 移植函数的初始化、AT Client 使用的信号量、互斥锁等资源初始化，并创建 `at_client` 线程用于 AT Client 中数据的接收的解析以及对 URC 数据的处理。
 
-### 数据收发方式 ###
+### AT Client 数据收发方式 ###
 
 AT Client 主要功能是发送 AT 命令、接收数据并解析数据。下面是对 AT Client 数据接收和发送相关流程与函数介绍。
 
@@ -426,7 +427,7 @@ AT 组件中，该结构体用于定义一个 AT Server 响应数据的控制块
 
 | 参数     | 描述                    |
 | :-----   | :-----                 |
-|resp      | 准备删除的回应结构体指针 |
+|resp      | 准备删除的响应结构体指针 |
 | **返回** | **描述**               |
 |无        | 无                     |
 
@@ -463,7 +464,7 @@ AT 组件中，该结构体用于定义一个 AT Server 响应数据的控制块
 | **返回** | **描述**                    |
 |\>=0       | 成功                       |
 |-1        | 失败                        |
-|-2        | 失败，接收回应超时           |
+|-2        | 失败，接收响应超时           |
 
 可参考以下代码了解如何使用以上几个 AT 命令收发相关函数使用方式：
 
@@ -510,14 +511,14 @@ int at_client_send(int argc, char **argv)
 }
 #ifdef FINSH_USING_MSH
 #include <finsh.h>
-/* 输出 at_clinet_send 函数到 msh 中 */
-MSH_CMD_EXPORT(at_clinet_send, AT Client send commands to AT Server and get response data);
+/* 输出 at_client_send 函数到 msh 中 */
+MSH_CMD_EXPORT(at_client_send, AT Client send commands to AT Server and get response data);
 #endif
 ```
 
 发送和接收数据的实现原理比较简单，主要是对 AT Client 绑定的串口设备的读写操作，并设置相关行数和超时来限制响应数据，值得注意的是，正常情况下需要先创建 resp 响应结构体传入 at_exec_cmd 函数用于数据的接收，当 at_exec_cmd 函数传入 resp 为 NULL 时说明本次发送数据**不考虑处理响应数据直接返回结果**。
 
-### 数据解析方式 ###
+### AT Client 数据解析方式 ###
 
 数据正常获取之后，需要对响应的数据进行解析处理，这也是 AT Client 重要的功能之一。 AT Client 中数据的解析提供自定义解析表达式的解析形式，其解析语法使用标准的 `sscanf` 解析语法。开发者可以通过自定义数据解析表达式回去响应数据中有用信息，前提是开发者需要提前查看相关手册了解 AT Client 连接的 AT Server 设备响应数据的基本格式。下面通过几个函数和例程简单 AT Client 数据解析方式。
 
@@ -531,7 +532,7 @@ MSH_CMD_EXPORT(at_clinet_send, AT Client send commands to AT Server and get resp
 
 | 参数     | 描述                       |
 | :-----   | :-----                    |
-|resp      | 回应结构体指针              |
+|resp      | 响应结构体指针              |
 |resp_line | 需要获取数据的行号          |
 | **返回** | **描述**                   |
 |!= NULL   | 成功，返回对应行号数据的指针 |
@@ -544,8 +545,8 @@ MSH_CMD_EXPORT(at_clinet_send, AT Client send commands to AT Server and get resp
 该函数用于在 AT Server 响应数据中通过关键字获取对应的一行数据。
 
 | 参数     | 描述                       |
-| :-----   | :-----                     |
-|resp      | 回应结构体指针              |
+| :-----   | :-----                    |
+|resp      | 响应结构体指针             |
 |keyword   | 关键字信息                 |
 | **返回** | **描述**                   |
 |!= NULL   | 成功，返回对应行号数据的指针 |
@@ -557,9 +558,9 @@ MSH_CMD_EXPORT(at_clinet_send, AT Client send commands to AT Server and get resp
 
 该函数用于在 AT Server 响应数据中获取指定行号的一行数据, 并解析该行数据中的参数。  
 
-| 参数     | 描述                              |
-| :-----   | :-----                           |
-|resp      | 回应结构体指针                    |
+| 参数     | 描述                             |
+| :-----   | :-----                          |
+|resp      | 响应结构体指针                   |
 |resp_line | 需要解析数据的行号                |
 |resp_expr | 自定义的参数解析表达式            |
 |...       | 解析参数列表，为可变参数          |
@@ -574,12 +575,12 @@ MSH_CMD_EXPORT(at_clinet_send, AT Client send commands to AT Server and get resp
 
 该函数用于在 AT Server 响应数据中获取包含关键字的一行数据, 并解析该行数据中的参数。  
 
-| 参数     | 描述                              |
-| :-----   | :-----                           |
-|resp      | 回应结构体指针                    |
-|keyword   | 关键字信息                       |
-|resp_expr | 自定义的参数解析表达式            |
-|...       | 解析参数列表，为可变参数          |
+| 参数     | 描述                            |
+| :-----   | :-----                         |
+|resp      | 响应结构体指针                  |
+|keyword   | 关键字信息                      |
+|resp_expr | 自定义的参数解析表达式           |
+|...       | 解析参数列表，为可变参数         |
 | **返回** | **描述**                        |
 |>0        | 成功，返回解析成功的参数个数      |
 |=0        | 失败，无匹参配数解析表达式的参数  |
@@ -647,9 +648,9 @@ at_delete_resp(resp);
 
 解析数据的关键在于解析表达式的正确定义，因为对于 AT 设备的响应数据，不同设备厂家不同命令的响应数据格式不唯一，所以只能提供自定义解析表达式的形式获取需要信息，at_resp_parse_line_args 解析参数函数的设计基于 `sscanf` 数据解析方式，开发者使用之前需要先了解基本的解析语法，再结合响应数据设计合适的解析语法。如果开发者不需要解析具体参数，可以直接使用 at_resp_get_line 函数获取一行的具体数据。
 
-### URC 数据处理 ###
+### AT Client URC 数据处理 ###
 
-URC 数据的处理是 AT Clinet 另一个重要功能，URC 数据为服务器主动下发的数据，不能通过上述数据发送接收函数接收，并且对于不同设备 URC 数据格式和功能不一样，所以 URC 数据处理的方式也是需要用户自定义实现的。AT 组件中对 URC 数据的处理提供列表管理方式，用户可自定义添加 URC 数据和其执行函数到管理列表中，所以URC 数据的处理也是 AT Client 的主要移植工作。
+URC 数据的处理是 AT Client 另一个重要功能，URC 数据为服务器主动下发的数据，不能通过上述数据发送接收函数接收，并且对于不同设备 URC 数据格式和功能不一样，所以 URC 数据处理的方式也是需要用户自定义实现的。AT 组件中对 URC 数据的处理提供列表管理方式，用户可自定义添加 URC 数据和其执行函数到管理列表中，所以URC 数据的处理也是 AT Client 的主要移植工作。
 
 相关结构体：
 
@@ -715,7 +716,7 @@ int at_client_port_init(void)
 }
 ```
 
-### 其他 API 接口介绍 ###
+### AT Client 其他 API 接口 ###
 
 #### 发送指定长度数据 ####
 
@@ -745,11 +746,100 @@ int at_client_port_init(void)
 |>0       | 成功，返回接收成功的数据长度 |
 |<=0      | 失败                       |
 
-#### 移植相关接口
+#### 设置接收数据的行结束符 ####
 
+    void at_set_end_sign(char ch);
+
+该函数用于设置行结束符，用于判断客户端接收一行数据的结束, 多用于 AT Socket 功能
+
+| 参数     | 描述                      |
+| :-----   | :-----                   |
+|ch        | 行结束符                  |
+| **返回** | **描述**                  |
+|无        | 无                        |
+
+
+#### 等待模块初始化完成 ####
+
+    int at_client_wait_connect(rt_uint32_t timeout);
+
+该函数用于 AT 模块启动时循环发送 AT 命令，直到模块响应数据，说明模块启动成功。
+
+| 参数     | 描述                      |
+| :-----   | :-----                   |
+|timeout   | 等待超时时间              |
+| **返回** | **描述**                 |
+|0         | 成功                     |
+|<0        | 失败，超时时间内无数据返回 |
+
+### AT Client 多客户端支持 ###
+
+一般情况下，设备作为 AT Client 只连接一个 AT 模块（AT Server）可直接使用上述数据收发和命令解析的函数。少数情况，设备作为 AT Client 需要连接多个 AT 模块（AT Server），这种情况下设备的多客户端支持。
+
+AT 组件提供对多客户端连接的支持，并且提供两套不同的函数接口：**单客户端模式函数** 和 **多客户端模式函数**。
+
+- 单客户端模式函数：该类函数接口主要用于设备只连接一个 AT 模块情况，或者在设备连接多个 AT 模块时，用于**第一个初始化**的 AT 客户端中。
+
+- 多客户端模式函数：该类函数接口主要用设备连接多个 AT 模块情况。
+
+两种不同模式函数和在不同应用场景下的优缺点如下图：
+
+![at client 模式对比图](../../figures/at_multiple_client.jpg)
+
+
+单客户端模式函数定义与单连接模式函数相比，主要是对传入的客户端对象的定义不同，单客户端模式函数默认使用第一个初始化的 AT 客户端对象，多客户端模式函数可以传入用户自定义获取的客户端对象, 获取客户端对象的函数如下：
+
+    at_client_t at_client_get(const char *dev_name);
+
+该函数通过传入的设备名称获取该设备创建的 AT 客户端对象，用于多客户端连接时区分不同的客户端。
+
+单客户端模式和多客户端模式函数接口定义区别如下几个函数：
+
+| 单客户端模式函数              | 多客户端模式函数                          |
+| :----------------------------| :---------------------------------------|
+| at_exec_cmd(...)             | at_obj_exec_cmd(client, ...)            |
+| at_set_end_sign(...)         | at_obj_set_end_sign(client, ...)        |
+| at_set_urc_table(...)        | at_obj_set_urc_table(client, ...)       |
+| at_client_wait_connect(...)  | at_client_obj_wait_connect(client, ...) |
+| at_client_send(...)          | at_client_obj_send(client, ...)         |
+| at_client_recv(...)          | at_client_obj_recv(client, ...)         |
+
+两种模式客户端数据收发和解析的方式基本相同，在函数使用流程上有所不同，如下所示：
+
+```c
+/* 单客户端模式函数使用方式 */
+
+at_response_t resp = RT_NULL;
+
+at_client_init("uart2", 512);
+
+resp = at_create_resp(256, 0, 5000);
+
+/* 使用单客户端模式函数发送命令 */
+at_exec_cmd(resp, "AT+CIFSR");
+
+at_delete_resp(resp);
 ```
-int at_client_port_init(void);
 
+```c
+/* 多客户端模式函数使用方式 */
+
+at_response_t resp = RT_NULL;
+at_client_t client = RT_NULL;
+
+/* 初始化两个 AT 客户端 */
+at_client_init("uart2", 512);
+at_client_init("uart3", 512);
+
+/* 通过名称获取对应的 AT 客户端对象 */
+client = at_client_get("uart3");
+
+resp = at_create_resp(256, 0, 5000);
+
+/* 使用多客户端模式函数发送命令 */
+at_obj_exec_cmd(client, resp, "AT+CIFSR");
+
+at_delete_resp(resp);
 ```
 
-该函数为 AT Client 移植初始化函数，完成了整个 AT Client 的移植，改函数中主要对 URC 数据列表进行初始化。
+其他函数使用的流程区别类似于上述 `at_obj_exec_cmd()` 函数，主要是先通过 `at_client_get()` 函数获取客户端对象，再通过传入的对象判断是哪个客户端，实现多客户端的支持。 
