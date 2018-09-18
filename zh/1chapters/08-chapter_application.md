@@ -97,7 +97,7 @@
 Windows下可以使用(假设使用的BSP是qemu-vexpress-a9)：
 
     set RTT_ROOT=d:\your_rtthread
-	set RTT_ROOT=d:\your_rtthread\bsp\qemu-vexpress-a9
+	set BSP_ROOT=d:\your_rtthread\bsp\qemu-vexpress-a9
 
 来设置对应的环境变量。然后使用如下命令来编译动态模块，例如hello的例子：
 
